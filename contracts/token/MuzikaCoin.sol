@@ -9,10 +9,10 @@ contract MuzikaCoin is MintableToken, Pausable {
   string public symbol = 'MZK';
   uint8 public decimals = 18;
 
-  bytes8 constant internal MODE_TRANSFER = "Transfer";
-  bytes8 constant internal MODE_APPROVAL = "Approval";
-  bytes8 constant internal MODE_INC_APPROVAL = "IncApprv";
-  bytes8 constant internal MODE_DEC_APPROVAL = "DecApprv";
+  bytes8 constant internal MODE_TRANSFER = 'Transfer';
+  bytes8 constant internal MODE_APPROVAL = 'Approval';
+  bytes8 constant internal MODE_INC_APPROVAL = 'IncApprv';
+  bytes8 constant internal MODE_DEC_APPROVAL = 'DecApprv';
 
   event Burn(address indexed burner, uint256 value);
 
@@ -59,11 +59,17 @@ contract MuzikaCoin is MintableToken, Pausable {
     emit Transfer(0x0, msg.sender, initialSupply);
   }
 
-  function upgradePrefixPreSignedFirst(uint8 _version, bytes _prefix) public onlyOwner {
+  function upgradePrefixPreSignedFirst(uint8 _version, bytes _prefix) 
+    public 
+    onlyOwner 
+  {
     _prefixPreSignedFirst[_version] = _prefix;
   }
 
-  function upgradePrefixPreSignedSecond(uint8 _version, bytes _prefix) public onlyOwner {
+  function upgradePrefixPreSignedSecond(uint8 _version, bytes _prefix) 
+    public 
+    onlyOwner 
+  {
     _prefixPreSignedSecond[_version] = _prefix;
   }
 
@@ -72,7 +78,11 @@ contract MuzikaCoin is MintableToken, Pausable {
    *
    * @param _target The address to freeze
    */
-  function freezeAddress(address _target) public onlyOwner onlyNotFrozenAddress(_target) {
+  function freezeAddress(address _target) 
+    public 
+    onlyOwner 
+    onlyNotFrozenAddress(_target) 
+  {
     frozenAddress[_target] = true;
 
     emit FreezeAddress(_target);
@@ -83,7 +93,11 @@ contract MuzikaCoin is MintableToken, Pausable {
    *
    * @param _target The address to unfreeze
    */
-  function unfreezeAddress(address _target) public onlyOwner onlyFrozenAddress(_target) {
+  function unfreezeAddress(address _target) 
+    public 
+    onlyOwner 
+    onlyFrozenAddress(_target) 
+  {
     delete frozenAddress[_target];
 
     emit UnfreezeAddress(_target);
@@ -171,7 +185,8 @@ contract MuzikaCoin is MintableToken, Pausable {
   }
 
   /**
-   * @dev Be careful to use delegateTransfer. If attacker whose balance is less than sum of fee and amount
+   * @dev Be careful to use delegateTransfer. 
+   * @dev If attacker whose balance is less than sum of fee and amount
    * @dev requests constantly transferring using delegateTransfer/delegateApprove to someone,
    * @dev he or she may lose all ether to process these requests.
    */
@@ -397,13 +412,13 @@ contract MuzikaCoin is MintableToken, Pausable {
         return hash;
       } else if (_version == 1) {
         return keccak256(
-          "\x19Ethereum Signed Message:\n32",
+          '\x19Ethereum Signed Message:\n32',
           hash
         );
       } else {
         // Support Standard Prefix (Trezor)
         return keccak256(
-          "\x19Ethereum Signed Message:\n\x20",
+          '\x19Ethereum Signed Message:\n\x20',
           hash
         );
       }
