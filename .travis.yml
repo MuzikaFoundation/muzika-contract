@@ -1,0 +1,15 @@
+sudo: required
+dist: trusty
+language: node_js
+node_js:
+  - "8"
+  - "9"
+
+install:
+  - npm install -g truffle ganache-cli
+  - npm install
+script:
+  - npm run lin
+  - npm run contract:compile
+  - npm run test
+
