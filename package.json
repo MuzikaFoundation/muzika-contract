@@ -1,0 +1,33 @@
+{
+  "name": "muzika-contract",
+  "version": "0.0.1",
+  "license": "MIT",
+  "scripts": {
+    "test": "npm run test:contract",
+    "lint": "solium -d contracts/",
+    "test:contract": "truffle test",
+    "contract:compile": "truffle compile"
+  },
+  "private": true,
+  "dependencies": {
+    "bignumber.js": "^5.0.0",
+    "bn.js": "^4.11.8",
+    "eth-sig-util": "^1.4.2",
+    "ethereumjs-abi": "^0.6.5",
+    "ethereumjs-util": "^5.2.0",
+    "ethereumjs-wallet": "^0.6.0",
+    "truffle-contract": "^3.0.5"
+  },
+  "devDependencies": {
+    "babel-polyfill": "^6.26.0",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-stage-2": "^6.24.1",
+    "babel-preset-stage-3": "^6.24.1",
+    "babel-register": "^6.26.0",
+    "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
+    "chai-bignumber": "^2.0.2",
+    "solium": "git+https://github.com/duaraghav8/Solium.git#develop",
+    "truffle": "^4.1.7"
+  }
+}

@@ -1,0 +1,4 @@
+[submodule "zeppelin-solidity"]
+	path = zeppelin-solidity
+	url = https://github.com/MuzikaFoundation/zeppelin-solidity.git
+	branch = muzika-develop
