@@ -59,16 +59,16 @@ contract MuzikaCoin is MintableToken, Pausable {
     emit Transfer(0x0, msg.sender, initialSupply);
   }
 
-  function upgradePrefixPreSignedFirst(uint8 _version, bytes _prefix) 
-    public 
-    onlyOwner 
+  function upgradePrefixPreSignedFirst(uint8 _version, bytes _prefix)
+    public
+    onlyOwner
   {
     _prefixPreSignedFirst[_version] = _prefix;
   }
 
-  function upgradePrefixPreSignedSecond(uint8 _version, bytes _prefix) 
-    public 
-    onlyOwner 
+  function upgradePrefixPreSignedSecond(uint8 _version, bytes _prefix)
+    public
+    onlyOwner
   {
     _prefixPreSignedSecond[_version] = _prefix;
   }
@@ -78,10 +78,10 @@ contract MuzikaCoin is MintableToken, Pausable {
    *
    * @param _target The address to freeze
    */
-  function freezeAddress(address _target) 
-    public 
-    onlyOwner 
-    onlyNotFrozenAddress(_target) 
+  function freezeAddress(address _target)
+    public
+    onlyOwner
+    onlyNotFrozenAddress(_target)
   {
     frozenAddress[_target] = true;
 
@@ -93,10 +93,10 @@ contract MuzikaCoin is MintableToken, Pausable {
    *
    * @param _target The address to unfreeze
    */
-  function unfreezeAddress(address _target) 
-    public 
-    onlyOwner 
-    onlyFrozenAddress(_target) 
+  function unfreezeAddress(address _target)
+    public
+    onlyOwner
+    onlyFrozenAddress(_target)
   {
     delete frozenAddress[_target];
 
@@ -185,7 +185,7 @@ contract MuzikaCoin is MintableToken, Pausable {
   }
 
   /**
-   * @dev Be careful to use delegateTransfer. 
+   * @dev Be careful to use delegateTransfer.
    * @dev If attacker whose balance is less than sum of fee and amount
    * @dev requests constantly transferring using delegateTransfer/delegateApprove to someone,
    * @dev he or she may lose all ether to process these requests.
