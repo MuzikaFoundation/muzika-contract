@@ -130,57 +130,26 @@ contract('MuzikaCoin', ([_, owner, recipient, anotherAccount, thirdAccount]) => 
     await assertRevert(token.transferFrom(recipient, anotherAccount, 50, {from: thirdAccount}));
   });
 
-  describe('transferPreSigned() tests', () => {
+  describe('preSignedFunctions', () => {
     const from = '0x44daf2bb9f91182ec07e99959516287e4bd7db80';
     const fromPrivKey = '0x33745346434c76712ec3029a3b5bcef55f7fd06e83f5be334dbf603624bbbede';
     const fromPrivKeyBuf = Buffer.from(fromPrivKey.slice(2), 'hex');
 
-    const to = recipient;
-    const delegate = anotherAccount;
-    const initialTransferAmount = 5000;
-    const amount = 500;
-    const fee = 10;
+    let to = recipient;
+    let delegate = anotherAccount;
+    let initialTransferAmount = 5000;
+    let amount = 500;
+    let fee = 10;
 
-    const sign = async (_from, _to, _amount, _fee, _nonce) => {
+    const signWithMode = async (_mode, _to, _amount, _fee, _nonce) => {
       let message = ethAbi.soliditySHA3(
         ['bytes8', 'address', 'address', 'uint256', 'uint256', 'uint256'],
-        [MODE_TRANSFER, token.address, _to, _amount, _fee, _nonce]
+        [_mode, token.address, _to, _amount, _fee, _nonce]
       );
-      return await promisify(web3.eth.sign, _from, ethUtil.bufferToHex(message));
+      return await promisify(web3.eth.sign, from, ethUtil.bufferToHex(message));
     };
 
-    beforeEach(async () => {
-      // new account has no ether
-      await promisify(web3.personal.importRawKey, fromPrivKey, 'password');
-      await token.transfer(from, initialTransferAmount, {from: owner});
-    });
-
-    it('should support to delegate transferring correctly', async () => {
-      // 'from' wants to transfer to 'to' without use ether
-      let nonce = await promisify(web3.eth.getTransactionCount, from);
-
-      const currentEther = await promisify(web3.eth.getBalance, from);
-      const signature = await sign(from, to, amount, fee, nonce);
-
-      // another account send the transaction
-      await token.transferPreSigned(to, amount, fee, nonce, 1, signature, {from: delegate});
-
-      const balanceOfFrom = await token.balanceOf(from);
-      const balanceOfTo = await token.balanceOf(to);
-      const balanceOfDelegate = await token.balanceOf(delegate);
-      const etherOfFrom = await promisify(web3.eth.getBalance, from);
-
-      balanceOfFrom.should.be.bignumber.equal(initialTransferAmount - amount - fee);
-      balanceOfTo.should.be.bignumber.equal(amount);
-      balanceOfDelegate.should.be.bignumber.equal(fee);
-      etherOfFrom.should.be.bignumber.equal(currentEther);
-    });
-
-    it('should support to delegate transferring correctly using Trezor', async () => {
-      // 'from' wants to transfer to 'to' without use ether
-      let nonce = await promisify(web3.eth.getTransactionCount, from);
-
-      const currentEther = await promisify(web3.eth.getBalance, from);
+    const trezorSignWithMode = async (_mode, _to, _amount, _fee, _nonce) => {
       const rawSig = ethUtil.ecsign(
         ethAbi.soliditySHA3(
           ['string', 'bytes32'],
@@ -188,133 +157,531 @@ contract('MuzikaCoin', ([_, owner, recipient, anotherAccount, thirdAccount]) => 
             '\x19Ethereum Signed Message:\n\x20',
             ethAbi.soliditySHA3(
               ['bytes8', 'address', 'address', 'uint256', 'uint256', 'uint256'],
-              [MODE_TRANSFER, token.address, to, amount, fee, nonce]
+              [_mode, token.address, _to, _amount, _fee, _nonce]
             )
           ]
         ),
         fromPrivKeyBuf
       );
-      const signature = ethUtil.bufferToHex(sigUtil.concatSig(rawSig.v, rawSig.r, rawSig.s));
+      return Promise.resolve(ethUtil.bufferToHex(sigUtil.concatSig(rawSig.v, rawSig.r, rawSig.s)));
+    };
 
-      // another account send the transaction
-      await token.transferPreSigned(to, amount, fee, nonce, 2, signature, {from: delegate});
-
-      const balanceOfFrom = await token.balanceOf(from);
-      const balanceOfTo = await token.balanceOf(to);
-      const balanceOfDelegate = await token.balanceOf(delegate);
-      const etherOfFrom = await promisify(web3.eth.getBalance, from);
-
-      balanceOfFrom.should.be.bignumber.equal(initialTransferAmount - amount - fee);
-      balanceOfTo.should.be.bignumber.equal(amount);
-      balanceOfDelegate.should.be.bignumber.equal(fee);
-      etherOfFrom.should.be.bignumber.equal(currentEther);
-    });
-
-    it('should support to delegate transferring correctly using signTypedData', async () => {
-      // 'from' wants to transfer to 'to' without use ether
-      let nonce = await promisify(web3.eth.getTransactionCount, from);
-
-      const currentEther = await promisify(web3.eth.getBalance, from);
+    const signTypedDataWithMode = async (_mode, _to, _amount, _fee, _nonce) => {
       const typedData = [
-        {type: 'bytes8', name: 'Mode', value: MODE_TRANSFER},
+        {type: 'bytes8', name: 'Mode', value: _mode},
         {type: 'address', name: 'Token', value: token.address},
-        {type: 'address', name: 'To', value: to},
-        {type: 'uint256', name: 'Amount', value: amount},
-        {type: 'uint256', name: 'Fee', value: fee},
-        {type: 'uint256', name: 'Nonce', value: nonce},
+        {type: 'address', name: 'To', value: _to},
+        {type: 'uint256', name: 'Amount', value: _amount},
+        {type: 'uint256', name: 'Fee', value: _fee},
+        {type: 'uint256', name: 'Nonce', value: _nonce},
       ];
-      const signature = sigUtil.signTypedData(fromPrivKeyBuf, {data: typedData});
+      return Promise.resolve(sigUtil.signTypedData(fromPrivKeyBuf, {data: typedData}));
+    };
 
-      // another account send the transaction
-      await token.transferPreSigned(to, amount, fee, nonce, 3, signature, {from: delegate});
+    beforeEach(async () => {
+      // new account has no ether
+      await promisify(web3.personal.importRawKey, fromPrivKey, 'password');
+      await token.transfer(from, initialTransferAmount, {from: owner});
 
-      const balanceOfFrom = await token.balanceOf(from);
-      const balanceOfTo = await token.balanceOf(to);
-      const balanceOfDelegate = await token.balanceOf(delegate);
-      const etherOfFrom = await promisify(web3.eth.getBalance, from);
-
-      balanceOfFrom.should.be.bignumber.equal(initialTransferAmount - amount - fee);
-      balanceOfTo.should.be.bignumber.equal(amount);
-      balanceOfDelegate.should.be.bignumber.equal(fee);
-      etherOfFrom.should.be.bignumber.equal(currentEther);
+      to = recipient;
+      delegate = anotherAccount;
+      initialTransferAmount = 5000;
+      amount = 500;
+      fee = 10;
     });
 
-    it('is successfully transferred with boundary value', async () => {
-      let nonce = await promisify(web3.eth.getTransactionCount, from);
+    describe('transferPreSigned()', () => {
+      const sign = signWithMode.bind(null, MODE_TRANSFER);
+      const trezorSign = trezorSignWithMode.bind(null, MODE_TRANSFER);
+      const signTypedData = signTypedDataWithMode.bind(null, MODE_TRANSFER);
 
-      const signature = await sign(from, to, initialTransferAmount - fee, fee, nonce);
+      it('should support to delegate transferring correctly', async () => {
+        // 'from' wants to transfer to 'to' without use ether
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
 
-      // abnormal amount
-      await token.transferPreSigned(to, initialTransferAmount - fee, fee, nonce, 1, signature, {from: delegate});
+        const currentEther = await promisify(web3.eth.getBalance, from);
+        const signature = await sign(to, amount, fee, nonce);
 
-      const balanceOfFrom = await token.balanceOf(from);
-      const balanceOfTo = await token.balanceOf(to);
-      const balanceOfDelegate = await token.balanceOf(delegate);
+        // another account send the transaction
+        await token.transferPreSigned(to, amount, fee, nonce, 1, signature, {from: delegate});
 
-      balanceOfFrom.should.be.bignumber.equal(0);
-      balanceOfTo.should.be.bignumber.equal(initialTransferAmount - fee);
-      balanceOfDelegate.should.be.bignumber.equal(fee);
+        const balanceOfFrom = await token.balanceOf(from);
+        const balanceOfTo = await token.balanceOf(to);
+        const balanceOfDelegate = await token.balanceOf(delegate);
+        const etherOfFrom = await promisify(web3.eth.getBalance, from);
+
+        balanceOfFrom.should.be.bignumber.equal(initialTransferAmount - amount - fee);
+        balanceOfTo.should.be.bignumber.equal(amount);
+        balanceOfDelegate.should.be.bignumber.equal(fee);
+        etherOfFrom.should.be.bignumber.equal(currentEther);
+      });
+
+      it('should support to delegate transferring correctly using Trezor', async () => {
+        // 'from' wants to transfer to 'to' without use ether
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+
+        const currentEther = await promisify(web3.eth.getBalance, from);
+        const signature = await trezorSign(to, amount, fee, nonce);
+
+        // another account send the transaction
+        await token.transferPreSigned(to, amount, fee, nonce, 2, signature, {from: delegate});
+
+        const balanceOfFrom = await token.balanceOf(from);
+        const balanceOfTo = await token.balanceOf(to);
+        const balanceOfDelegate = await token.balanceOf(delegate);
+        const etherOfFrom = await promisify(web3.eth.getBalance, from);
+
+        balanceOfFrom.should.be.bignumber.equal(initialTransferAmount - amount - fee);
+        balanceOfTo.should.be.bignumber.equal(amount);
+        balanceOfDelegate.should.be.bignumber.equal(fee);
+        etherOfFrom.should.be.bignumber.equal(currentEther);
+      });
+
+      it('should support to delegate transferring correctly using signTypedData', async () => {
+        // 'from' wants to transfer to 'to' without use ether
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+
+        const currentEther = await promisify(web3.eth.getBalance, from);
+        const signature = await signTypedData(to, amount, fee, nonce);
+
+        // another account send the transaction
+        await token.transferPreSigned(to, amount, fee, nonce, 3, signature, {from: delegate});
+
+        const balanceOfFrom = await token.balanceOf(from);
+        const balanceOfTo = await token.balanceOf(to);
+        const balanceOfDelegate = await token.balanceOf(delegate);
+        const etherOfFrom = await promisify(web3.eth.getBalance, from);
+
+        balanceOfFrom.should.be.bignumber.equal(initialTransferAmount - amount - fee);
+        balanceOfTo.should.be.bignumber.equal(amount);
+        balanceOfDelegate.should.be.bignumber.equal(fee);
+        etherOfFrom.should.be.bignumber.equal(currentEther);
+      });
+
+      it('is successfully transferred with boundary value', async () => {
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+
+        const signature = await sign(to, initialTransferAmount - fee, fee, nonce);
+
+        // abnormal amount
+        await token.transferPreSigned(to, initialTransferAmount - fee, fee, nonce, 1, signature, {from: delegate});
+
+        const balanceOfFrom = await token.balanceOf(from);
+        const balanceOfTo = await token.balanceOf(to);
+        const balanceOfDelegate = await token.balanceOf(delegate);
+
+        balanceOfFrom.should.be.bignumber.equal(0);
+        balanceOfTo.should.be.bignumber.equal(initialTransferAmount - fee);
+        balanceOfDelegate.should.be.bignumber.equal(fee);
+      });
+
+      // it('should not be transferred when it has invalid nonce', async () => {
+      //   const abnormalNonce = nonce + 2;
+      //   const signature = await sign(from, to, amount, fee, abnormalNonce);
+      //
+      //   await assertRevert(token.delegateTransfer(from, to, amount, fee, signature, {from: delegate}));
+      // });
+
+      it('should protect replay attack', async () => {
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+
+        const signature = await sign(to, amount, fee, nonce);
+
+        await token.transferPreSigned(to, amount, fee, nonce, 1, signature, {from: delegate});
+        await assertRevert(token.transferPreSigned(to, amount, fee, nonce, 1, signature, {from: delegate}));
+      });
+
+      it('should not be transferred when it has invalid parameter', async () => {
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+        const signature = await sign(to, amount, fee, nonce);
+
+        // abnormal amount
+        nonce = await promisify(web3.eth.getTransactionCount, from);
+        await assertRevert(token.transferPreSigned(to, 600, fee, nonce, 1, signature, {from: delegate}));
+
+        nonce = await promisify(web3.eth.getTransactionCount, from);
+        await assertRevert(token.transferPreSigned(to, amount, 50, nonce, 1, signature, {from: delegate}));
+
+        nonce = await promisify(web3.eth.getTransactionCount, from);
+        await assertRevert(token.transferPreSigned(owner, amount, fee, nonce, 1, signature, {from: delegate}));
+      });
+
+      it('should not be transferred when it has invalid signature', async () => {
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+
+        const signature = await sign(owner, amount, fee, nonce);
+
+        await assertRevert(token.transferPreSigned(to, amount, fee, nonce, 1, signature, {from: delegate}));
+      });
+
+      it('should not be transferred when it has balances of \'from\' is over', async () => {
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+
+        // exceeded amount
+        const signature = await sign(to, initialTransferAmount, fee, nonce);
+
+        // abnormal amount
+        await assertRevert(token.transferPreSigned(to, initialTransferAmount, fee, nonce, 1, signature, {from: delegate}));
+      });
+
+      it('should not be transferred when overflow', async () => {
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+
+        let amount = '0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+        let fee = '0x8000000000000000000000000000000000000000000000000000000000000001';
+        // amount + fee = 0x7f...fff + 0x800...001 = 0x000...000 in uint256
+        const signature = await sign(to, amount, fee, nonce);
+
+        // abnormal amount
+        await assertRevert(token.transferPreSigned(to, amount, fee, nonce, 1, signature, {from: delegate}));
+      });
     });
 
-    // it('should not be transferred when it has invalid nonce', async () => {
-    //   const abnormalNonce = nonce + 2;
-    //   const signature = await sign(from, to, amount, fee, abnormalNonce);
-    //
-    //   await assertRevert(token.delegateTransfer(from, to, amount, fee, signature, {from: delegate}));
-    // });
+    describe('approvePreSigned()', () => {
+      const sign = signWithMode.bind(null, MODE_APPROVAL);
+      const trezorSign = trezorSignWithMode.bind(null, MODE_APPROVAL);
+      const signTypedData = signTypedDataWithMode.bind(null, MODE_APPROVAL);
 
-    it('should protect replay attach', async () => {
-      let nonce = await promisify(web3.eth.getTransactionCount, from);
+      it('should support to delegate approving correctly', async () => {
+        // 'from' wants to transfer to 'to' without use ether
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
 
-      const signature = await sign(from, to, amount, fee, nonce);
+        const currentEther = await promisify(web3.eth.getBalance, from);
+        const signature = await sign(to, amount, fee, nonce);
 
-      await token.transferPreSigned(to, amount, fee, nonce, 1, signature, {from: delegate});
-      await assertRevert(token.transferPreSigned(to, amount, fee, nonce, 1, signature, {from: delegate}));
+        // another account send the transaction
+        await token.approvePreSigned(to, amount, fee, nonce, 1, signature, {from: delegate});
+
+        const allowance = await token.allowance(from, to);
+        const balanceOfDelegate = await token.balanceOf(delegate);
+        const etherOfFrom = await promisify(web3.eth.getBalance, from);
+
+        allowance.should.be.bignumber.equal(amount);
+        balanceOfDelegate.should.be.bignumber.equal(fee);
+        etherOfFrom.should.be.bignumber.equal(currentEther);
+      });
+
+      it('should support to delegate approving correctly using Trezor', async () => {
+        // 'from' wants to transfer to 'to' without use ether
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+
+        const currentEther = await promisify(web3.eth.getBalance, from);
+        const signature = await trezorSign(to, amount, fee, nonce);
+
+        // another account send the transaction
+        await token.approvePreSigned(to, amount, fee, nonce, 2, signature, {from: delegate});
+
+        const allowance = await token.allowance(from, to);
+        const balanceOfDelegate = await token.balanceOf(delegate);
+        const etherOfFrom = await promisify(web3.eth.getBalance, from);
+
+        allowance.should.be.bignumber.equal(amount);
+        balanceOfDelegate.should.be.bignumber.equal(fee);
+        etherOfFrom.should.be.bignumber.equal(currentEther);
+      });
+
+      it('should support to delegate approving correctly using signTypedData', async () => {
+        // 'from' wants to transfer to 'to' without use ether
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+
+        const currentEther = await promisify(web3.eth.getBalance, from);
+        const signature = await signTypedData(to, amount, fee, nonce);
+
+        // another account send the transaction
+        await token.approvePreSigned(to, amount, fee, nonce, 3, signature, {from: delegate});
+
+        const allowance = await token.allowance(from, to);
+        const balanceOfDelegate = await token.balanceOf(delegate);
+        const etherOfFrom = await promisify(web3.eth.getBalance, from);
+
+        allowance.should.be.bignumber.equal(amount);
+        balanceOfDelegate.should.be.bignumber.equal(fee);
+        etherOfFrom.should.be.bignumber.equal(currentEther);
+      });
+
+      it('should protect replay attack', async () => {
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+
+        const signature = await sign(to, amount, fee, nonce);
+
+        await token.approvePreSigned(to, amount, fee, nonce, 1, signature, {from: delegate});
+        await assertRevert(token.approvePreSigned(to, amount, fee, nonce, 1, signature, {from: delegate}));
+      });
+
+      it('should not be approved when it has invalid parameter', async () => {
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+        const signature = await sign(to, amount, fee, nonce);
+
+        // abnormal amount
+        nonce = await promisify(web3.eth.getTransactionCount, from);
+        await assertRevert(token.approvePreSigned(to, 600, fee, nonce, 1, signature, {from: delegate}));
+
+        nonce = await promisify(web3.eth.getTransactionCount, from);
+        await assertRevert(token.approvePreSigned(to, amount, 50, nonce, 1, signature, {from: delegate}));
+
+        nonce = await promisify(web3.eth.getTransactionCount, from);
+        await assertRevert(token.approvePreSigned(owner, amount, fee, nonce, 1, signature, {from: delegate}));
+      });
+
+      it('should not be approved when it has invalid signature', async () => {
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+
+        const signature = await sign(delegate, amount, fee, nonce);
+
+        await assertRevert(token.approvePreSigned(to, amount, fee, nonce, 1, signature, {from: delegate}));
+      });
     });
 
-    it('should not be transferred when it has invalid parameter', async () => {
-      let nonce = await promisify(web3.eth.getTransactionCount, from);
-      const signature = await sign(from, to, amount, fee, nonce);
+    describe('increaseApprovalPreSigned()', () => {
+      const sign = signWithMode.bind(null, MODE_INC_APPROVAL);
+      const trezorSign = trezorSignWithMode.bind(null, MODE_INC_APPROVAL);
+      const signTypedData = signTypedDataWithMode.bind(null, MODE_INC_APPROVAL);
 
-      // abnormal amount
-      nonce = await promisify(web3.eth.getTransactionCount, from);
-      await assertRevert(token.transferPreSigned(to, 600, fee, nonce, 1, signature, {from: delegate}));
+      const signApproval = signWithMode.bind(null, MODE_APPROVAL);
+      const trezorSignApproval = trezorSignWithMode.bind(null, MODE_APPROVAL);
+      const signTypedDataApproval = signTypedDataWithMode.bind(null, MODE_APPROVAL);
 
-      nonce = await promisify(web3.eth.getTransactionCount, from);
-      await assertRevert(token.transferPreSigned(to, amount, 50, nonce, 1, signature, {from: delegate}));
+      let incAmount = 100;
 
-      nonce = await promisify(web3.eth.getTransactionCount, from);
-      await assertRevert(token.transferPreSigned(owner, amount, fee, nonce, 1, signature, {from: delegate}));
+      beforeEach(() => {
+        incAmount = 100;
+      });
+
+      it('should support to delegate increasing approval correctly', async () => {
+        const currentEther = await promisify(web3.eth.getBalance, from);
+
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+        let signature = await signApproval(to, amount, fee, nonce);
+        await token.approvePreSigned(to, amount, fee, nonce, 1, signature, {from: delegate});
+
+        nonce = await promisify(web3.eth.getTransactionCount, from);
+        signature = await sign(to, incAmount, fee, nonce);
+        await token.increaseApprovalPreSigned(to, incAmount, fee, nonce, 1, signature, {from: delegate});
+
+        const allowance = await token.allowance(from, to);
+        const balanceOfDelegate = await token.balanceOf(delegate);
+        const etherOfFrom = await promisify(web3.eth.getBalance, from);
+
+        allowance.should.be.bignumber.equal(amount + incAmount);
+        balanceOfDelegate.should.be.bignumber.equal(fee * 2);
+        etherOfFrom.should.be.bignumber.equal(currentEther);
+      });
+
+      it('should support to delegate increasing approval correctly using Trezor', async () => {
+        const currentEther = await promisify(web3.eth.getBalance, from);
+
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+        let signature = await trezorSignApproval(to, amount, fee, nonce);
+        await token.approvePreSigned(to, amount, fee, nonce, 2, signature, {from: delegate});
+
+        nonce = await promisify(web3.eth.getTransactionCount, from);
+        signature = await trezorSign(to, incAmount, fee, nonce);
+        await token.increaseApprovalPreSigned(to, incAmount, fee, nonce, 2, signature, {from: delegate});
+
+        const allowance = await token.allowance(from, to);
+        const balanceOfDelegate = await token.balanceOf(delegate);
+        const etherOfFrom = await promisify(web3.eth.getBalance, from);
+
+        allowance.should.be.bignumber.equal(amount + incAmount);
+        balanceOfDelegate.should.be.bignumber.equal(fee * 2);
+        etherOfFrom.should.be.bignumber.equal(currentEther);
+      });
+
+      it('should support to delegate increasing approval correctly using signTypedData', async () => {
+        const currentEther = await promisify(web3.eth.getBalance, from);
+
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+        let signature = await signTypedDataApproval(to, amount, fee, nonce);
+        await token.approvePreSigned(to, amount, fee, nonce, 3, signature, {from: delegate});
+
+        nonce = await promisify(web3.eth.getTransactionCount, from);
+        signature = await signTypedData(to, incAmount, fee, nonce);
+        await token.increaseApprovalPreSigned(to, incAmount, fee, nonce, 3, signature, {from: delegate});
+
+        const allowance = await token.allowance(from, to);
+        const balanceOfDelegate = await token.balanceOf(delegate);
+        const etherOfFrom = await promisify(web3.eth.getBalance, from);
+
+        allowance.should.be.bignumber.equal(amount + incAmount);
+        balanceOfDelegate.should.be.bignumber.equal(fee * 2);
+        etherOfFrom.should.be.bignumber.equal(currentEther);
+      });
+
+      it('should protect replay attack', async () => {
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+
+        const signature = await sign(to, amount, fee, nonce);
+
+        await token.increaseApprovalPreSigned(to, amount, fee, nonce, 1, signature, {from: delegate});
+        await assertRevert(token.increaseApprovalPreSigned(to, amount, fee, nonce, 1, signature, {from: delegate}));
+      });
+
+      it('should not be approved when it has invalid parameter', async () => {
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+        const signature = await sign(to, amount, fee, nonce);
+
+        // abnormal amount
+        nonce = await promisify(web3.eth.getTransactionCount, from);
+        await assertRevert(token.increaseApprovalPreSigned(to, 600, fee, nonce, 1, signature, {from: delegate}));
+
+        nonce = await promisify(web3.eth.getTransactionCount, from);
+        await assertRevert(token.increaseApprovalPreSigned(to, amount, 50, nonce, 1, signature, {from: delegate}));
+
+        nonce = await promisify(web3.eth.getTransactionCount, from);
+        await assertRevert(token.increaseApprovalPreSigned(owner, amount, fee, nonce, 1, signature, {from: delegate}));
+      });
+
+      it('should not be approved when it has invalid signature', async () => {
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+
+        const signature = await sign(delegate, amount, fee, nonce);
+
+        await assertRevert(token.increaseApprovalPreSigned(to, amount, fee, nonce, 1, signature, {from: delegate}));
+      });
+
+      it('should not be approved when overflow', async () => {
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+        let amount = '0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+        let incAmount = '0x8000000000000000000000000000000000000000000000000000000000000001';
+
+        let signature = await signApproval(to, amount, fee, nonce);
+        await token.approvePreSigned(to, amount, fee, nonce, 1, signature, {from: delegate});
+
+        nonce = await promisify(web3.eth.getTransactionCount, from);
+        signature = await sign(to, incAmount, fee, nonce);
+
+        // abnormal amount
+        await assertRevert(token.increaseApprovalPreSigned(to, incAmount, fee, nonce, 1, signature, {from: delegate}));
+      });
     });
 
-    it('should not be transferred when it has invalid signature', async () => {
-      let nonce = await promisify(web3.eth.getTransactionCount, from);
+    describe('decreaseApprovalPreSigned()', () => {
+      const sign = signWithMode.bind(null, MODE_DEC_APPROVAL);
+      const trezorSign = trezorSignWithMode.bind(null, MODE_DEC_APPROVAL);
+      const signTypedData = signTypedDataWithMode.bind(null, MODE_DEC_APPROVAL);
 
-      const signature = await sign(delegate, to, amount, fee, nonce);
+      const signApproval = signWithMode.bind(null, MODE_APPROVAL);
+      const trezorSignApproval = trezorSignWithMode.bind(null, MODE_APPROVAL);
+      const signTypedDataApproval = signTypedDataWithMode.bind(null, MODE_APPROVAL);
 
-      await assertRevert(token.transferPreSigned(to, amount, fee, nonce, 1, signature, {from: delegate}));
-    });
+      let decAmount = 100;
 
-    it('should not be transferred when it has balances of \'from\' is over', async () => {
-      let nonce = await promisify(web3.eth.getTransactionCount, from);
+      beforeEach(() => {
+        decAmount = 100;
+      });
 
-      // exceeded amount
-      const signature = await sign(from, to, initialTransferAmount, fee, nonce);
+      it('should support to delegate decreasing approval correctly', async () => {
+        const currentEther = await promisify(web3.eth.getBalance, from);
 
-      // abnormal amount
-      await assertRevert(token.transferPreSigned(to, initialTransferAmount, fee, nonce, 1, signature, {from: delegate}));
-    });
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+        let signature = await signApproval(to, amount, fee, nonce);
+        await token.approvePreSigned(to, amount, fee, nonce, 1, signature, {from: delegate});
 
-    it('should not be transferred when overflow', async () => {
-      let nonce = await promisify(web3.eth.getTransactionCount, from);
+        nonce = await promisify(web3.eth.getTransactionCount, from);
+        signature = await sign(to, decAmount, fee, nonce);
+        await token.decreaseApprovalPreSigned(to, decAmount, fee, nonce, 1, signature, {from: delegate});
 
-      let amount = '0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
-      let fee = '0x8000000000000000000000000000000000000000000000000000000000000001';
-      // amount + fee = 0x7f...fff + 0x800...001 = 0x000...000 in uint256
-      const signature = await sign(from, to, amount, fee, nonce);
+        const allowance = await token.allowance(from, to);
+        const balanceOfDelegate = await token.balanceOf(delegate);
+        const etherOfFrom = await promisify(web3.eth.getBalance, from);
 
-      // abnormal amount
-      await assertRevert(token.transferPreSigned(to, amount, fee, nonce, 1, signature, {from: delegate}));
+        allowance.should.be.bignumber.equal(amount - decAmount);
+        balanceOfDelegate.should.be.bignumber.equal(fee * 2);
+        etherOfFrom.should.be.bignumber.equal(currentEther);
+      });
+
+      it('should support to delegate decreasing approval correctly using Trezor', async () => {
+        const currentEther = await promisify(web3.eth.getBalance, from);
+
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+        let signature = await trezorSignApproval(to, amount, fee, nonce);
+        await token.approvePreSigned(to, amount, fee, nonce, 2, signature, {from: delegate});
+
+        nonce = await promisify(web3.eth.getTransactionCount, from);
+        signature = await trezorSign(to, decAmount, fee, nonce);
+        await token.decreaseApprovalPreSigned(to, decAmount, fee, nonce, 2, signature, {from: delegate});
+
+        const allowance = await token.allowance(from, to);
+        const balanceOfDelegate = await token.balanceOf(delegate);
+        const etherOfFrom = await promisify(web3.eth.getBalance, from);
+
+        allowance.should.be.bignumber.equal(amount - decAmount);
+        balanceOfDelegate.should.be.bignumber.equal(fee * 2);
+        etherOfFrom.should.be.bignumber.equal(currentEther);
+      });
+
+      it('should support to delegate decreasing approval correctly using signTypedData', async () => {
+        const currentEther = await promisify(web3.eth.getBalance, from);
+
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+        let signature = await signTypedDataApproval(to, amount, fee, nonce);
+        await token.approvePreSigned(to, amount, fee, nonce, 3, signature, {from: delegate});
+
+        nonce = await promisify(web3.eth.getTransactionCount, from);
+        signature = await signTypedData(to, decAmount, fee, nonce);
+        await token.decreaseApprovalPreSigned(to, decAmount, fee, nonce, 3, signature, {from: delegate});
+
+        const allowance = await token.allowance(from, to);
+        const balanceOfDelegate = await token.balanceOf(delegate);
+        const etherOfFrom = await promisify(web3.eth.getBalance, from);
+
+        allowance.should.be.bignumber.equal(amount - decAmount);
+        balanceOfDelegate.should.be.bignumber.equal(fee * 2);
+        etherOfFrom.should.be.bignumber.equal(currentEther);
+      });
+
+      it('should protect replay attack', async () => {
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+
+        const signature = await sign(to, amount, fee, nonce);
+
+        await token.decreaseApprovalPreSigned(to, amount, fee, nonce, 1, signature, {from: delegate});
+        await assertRevert(token.decreaseApprovalPreSigned(to, amount, fee, nonce, 1, signature, {from: delegate}));
+      });
+
+      it('should not be approved when it has invalid parameter', async () => {
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+        const signature = await sign(to, amount, fee, nonce);
+
+        // abnormal amount
+        nonce = await promisify(web3.eth.getTransactionCount, from);
+        await assertRevert(token.decreaseApprovalPreSigned(to, 600, fee, nonce, 1, signature, {from: delegate}));
+
+        nonce = await promisify(web3.eth.getTransactionCount, from);
+        await assertRevert(token.decreaseApprovalPreSigned(to, amount, 50, nonce, 1, signature, {from: delegate}));
+
+        nonce = await promisify(web3.eth.getTransactionCount, from);
+        await assertRevert(token.decreaseApprovalPreSigned(owner, amount, fee, nonce, 1, signature, {from: delegate}));
+      });
+
+      it('should not be approved when it has invalid signature', async () => {
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+
+        const signature = await sign(delegate, amount, fee, nonce);
+
+        await assertRevert(token.decreaseApprovalPreSigned(to, amount, fee, nonce, 1, signature, {from: delegate}));
+      });
+
+      it('should allow to decrease over remaining approval', async () => {
+        let nonce = await promisify(web3.eth.getTransactionCount, from);
+        let amount = '0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+        let decAmount = '0x8000000000000000000000000000000000000000000000000000000000000001';
+
+        let signature = await signApproval(to, amount, fee, nonce);
+        await token.approvePreSigned(to, amount, fee, nonce, 1, signature, {from: delegate});
+
+        let allowance = await token.allowance(from, to);
+        allowance.should.be.bignumber.equal(amount);
+
+        nonce = await promisify(web3.eth.getTransactionCount, from);
+        signature = await sign(to, decAmount, fee, nonce);
+
+        // abnormal amount
+        await token.decreaseApprovalPreSigned(to, decAmount, fee, nonce, 1, signature, {from: delegate});
+
+        allowance = await token.allowance(from, to);
+        allowance.should.be.bignumber.equal(0);
+      });
     });
   });
 });
