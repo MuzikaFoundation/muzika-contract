@@ -24,8 +24,8 @@ contract MuzikaCoinSavingsWallet is Heritable {
    * @dev wallet can send funds
    */
   function sendTo(address payee, uint256 amount) public onlyOwner {
-    require(payee != 0 && payee != address(this));
-    require(amount > 0);
+    require(payee != 0 && payee != address(this), 'Cannot send to yourself');
+    require(amount > 0, 'Amount must be greater than zero');
     payee.transfer(amount);
     emit Sent(payee, amount, address(this).balance);
   }
