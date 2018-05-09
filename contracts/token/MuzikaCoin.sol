@@ -3,7 +3,6 @@ pragma solidity ^0.4.23;
 import '../../zeppelin-solidity/contracts/token/ERC20/MintableToken.sol';
 import '../../zeppelin-solidity/contracts/lifecycle/Pausable.sol';
 
-
 contract MuzikaCoin is MintableToken, Pausable {
   string public name = 'MUZIKA COIN';
   string public symbol = 'MZK';
@@ -44,12 +43,12 @@ contract MuzikaCoin is MintableToken, Pausable {
   mapping (uint8 => bytes) internal _prefixPreSignedSecond;
 
   modifier onlyNotFrozenAddress(address _target) {
-    require(!frozenAddress[_target], 'The address is frozen');
+    require(!frozenAddress[_target]);
     _;
   }
 
   modifier onlyFrozenAddress(address _target) {
-    require(frozenAddress[_target], 'The address is not frozen');
+    require(frozenAddress[_target]);
     _;
   }
 
@@ -112,7 +111,7 @@ contract MuzikaCoin is MintableToken, Pausable {
   }
 
   function _burn(address _who, uint256 _value) internal {
-    require(_value <= balances[_who], 'Not enough amount to be burned');
+    require(_value <= balances[_who]);
     // no need to require value <= totalSupply, since that would imply the
     // sender's balance is greater than the totalSupply, which *should* be an assertion failure
 
@@ -204,7 +203,7 @@ contract MuzikaCoin is MintableToken, Pausable {
     whenNotPaused
     returns (bool)
   {
-    require(_to != address(0), 'Cannot transfer to zero-address');
+    require(_to != address(0));
 
     address _from = preSignedCheck(
       MODE_TRANSFER,
@@ -217,7 +216,7 @@ contract MuzikaCoin is MintableToken, Pausable {
     );
 
     uint256 _burden = _value.add(_fee);
-    require(_burden <= balances[_from], 'Not enough amount to be transferred');
+    require(_burden <= balances[_from]);
 
     balances[_from] = balances[_from].sub(_burden);
 
@@ -256,7 +255,7 @@ contract MuzikaCoin is MintableToken, Pausable {
       _sig
     );
 
-    require(_fee <= balances[_from], 'Not enough amount to be transferred');
+    require(_fee <= balances[_from]);
 
     allowed[_from][_to] = _value;
     emit Approval(_from, _to, _value);
@@ -294,7 +293,7 @@ contract MuzikaCoin is MintableToken, Pausable {
       _sig
     );
 
-    require(_fee <= balances[_from], 'Not enough amount to be transferred');
+    require(_fee <= balances[_from]);
 
     allowed[_from][_to] = allowed[_from][_to].add(_value);
     emit Approval(_from, _to, allowed[_from][_to]);
@@ -332,7 +331,7 @@ contract MuzikaCoin is MintableToken, Pausable {
       _sig
     );
 
-    require(_fee <= balances[_from], 'Not enough amount to be transferred');
+    require(_fee <= balances[_from]);
 
     uint256 oldValue = allowed[_from][_to];
     if (_value > oldValue) {
@@ -446,7 +445,7 @@ contract MuzikaCoin is MintableToken, Pausable {
   )
   internal view returns (address)
   {
-    require(_signatures[_sig] == false, 'Already done');
+    require(_signatures[_sig] == false);
 
     bytes32 hash = preSignedHashing(
       _mode,
@@ -459,7 +458,7 @@ contract MuzikaCoin is MintableToken, Pausable {
     );
 
     address _from = recover(hash, _sig);
-    require(_from != address(0), 'Authorization failed');
+    require(_from != address(0));
 
     return _from;
   }
