@@ -1,9 +1,9 @@
 pragma solidity ^0.4.23;
 
-import '../../zeppelin-solidity/contracts/token/ERC20/MintableToken.sol';
+import '../../zeppelin-solidity/contracts/token/ERC20/StandardToken.sol';
 import '../../zeppelin-solidity/contracts/lifecycle/Pausable.sol';
 
-contract MuzikaCoin is MintableToken, Pausable {
+contract MuzikaCoin is StandardToken, Pausable {
   string public name = 'MUZIKA COIN';
   string public symbol = 'MZK';
   uint8 public decimals = 18;
@@ -13,27 +13,11 @@ contract MuzikaCoin is MintableToken, Pausable {
   bytes8 constant internal MODE_INC_APPROVAL = 'IncApprv';
   bytes8 constant internal MODE_DEC_APPROVAL = 'DecApprv';
 
+  event Mint(address indexed to, uint256 amount);
   event Burn(address indexed burner, uint256 value);
 
   event FreezeAddress(address indexed target);
   event UnfreezeAddress(address indexed target);
-
-  /* Need?
-  event TransferPreSigned(
-    address indexed from,
-    address indexed to,
-    address indexed delegate,
-    uint256 value,
-    uint256 fee
-  );
-  event ApprovalPreSigned(
-    address indexed owner,
-    address indexed spender,
-    address indexed delegate,
-    uint256 value,
-    uint256 fee
-  );
-  */
 
   mapping (address => bool) public frozenAddress;
 
@@ -103,22 +87,32 @@ contract MuzikaCoin is MintableToken, Pausable {
   }
 
   /**
+   * @dev Function to mint tokens
+   * @param _to The address that will receive the minted tokens.
+   * @param _amount The amount of tokens to mint.
+   * @return A boolean that indicates if the operation was successful.
+   */
+  function mint(address _to, uint256 _amount) onlyOwner public returns (bool) {
+    totalSupply_ = totalSupply_.add(_amount);
+    balances[_to] = balances[_to].add(_amount);
+    emit Mint(_to, _amount);
+    emit Transfer(address(0), _to, _amount);
+    return true;
+  }
+
+  /**
    * @dev Burns a specific amount of tokens.
    * @param _value The amount of token to be burned.
    */
   function burn(uint256 _value) public onlyOwner {
-    _burn(msg.sender, _value);
-  }
-
-  function _burn(address _who, uint256 _value) internal {
-    require(_value <= balances[_who]);
+    require(_value <= balances[msg.sender]);
     // no need to require value <= totalSupply, since that would imply the
     // sender's balance is greater than the totalSupply, which *should* be an assertion failure
 
-    balances[_who] = balances[_who].sub(_value);
+    balances[msg.sender] = balances[msg.sender].sub(_value);
     totalSupply_ = totalSupply_.sub(_value);
-    emit Burn(_who, _value);
-    emit Transfer(_who, address(0), _value);
+    emit Burn(msg.sender, _value);
+    emit Transfer(msg.sender, address(0), _value);
   }
 
   function transfer(
@@ -147,42 +141,6 @@ contract MuzikaCoin is MintableToken, Pausable {
     return super.transferFrom(_from, _to, _value);
   }
 
-  function approve(
-    address _spender,
-    uint256 _value
-  )
-    public
-    onlyNotFrozenAddress(msg.sender)
-    whenNotPaused
-    returns (bool)
-  {
-    return super.approve(_spender, _value);
-  }
-
-  function increaseApproval(
-    address _spender,
-    uint _addedValue
-  )
-    public
-    onlyNotFrozenAddress(msg.sender)
-    whenNotPaused
-    returns (bool)
-  {
-    return super.increaseApproval(_spender, _addedValue);
-  }
-
-  function decreaseApproval(
-    address _spender,
-    uint _subtractedValue
-  )
-    public
-    onlyNotFrozenAddress(msg.sender)
-    whenNotPaused
-    returns (bool)
-  {
-    return super.decreaseApproval(_spender, _subtractedValue);
-  }
-
   /**
    * @dev Be careful to use delegateTransfer.
    * @dev If attacker whose balance is less than sum of fee and amount
@@ -198,7 +156,6 @@ contract MuzikaCoin is MintableToken, Pausable {
     bytes _sig
   )
     public
-    onlyNotFrozenAddress(_from)
     onlyNotFrozenAddress(msg.sender)
     whenNotPaused
     returns (bool)
@@ -240,9 +197,6 @@ contract MuzikaCoin is MintableToken, Pausable {
     bytes _sig
   )
     public
-    onlyNotFrozenAddress(_from)
-    onlyNotFrozenAddress(msg.sender)
-    whenNotPaused
     returns (bool)
   {
     address _from = preSignedCheck(
@@ -278,9 +232,6 @@ contract MuzikaCoin is MintableToken, Pausable {
     bytes _sig
   )
     public
-    onlyNotFrozenAddress(_from)
-    onlyNotFrozenAddress(msg.sender)
-    whenNotPaused
     returns (bool)
   {
     address _from = preSignedCheck(
@@ -316,9 +267,6 @@ contract MuzikaCoin is MintableToken, Pausable {
     bytes _sig
   )
     public
-    onlyNotFrozenAddress(_from)
-    onlyNotFrozenAddress(msg.sender)
-    whenNotPaused
     returns (bool)
   {
     address _from = preSignedCheck(
@@ -459,6 +407,7 @@ contract MuzikaCoin is MintableToken, Pausable {
 
     address _from = recover(hash, _sig);
     require(_from != address(0));
+    require(!frozenAddress[_from]);
 
     return _from;
   }
