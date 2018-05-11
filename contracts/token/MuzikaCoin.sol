@@ -18,7 +18,6 @@ contract MuzikaCoin is MintableToken, Pausable {
   event FreezeAddress(address indexed target);
   event UnfreezeAddress(address indexed target);
 
-  /* Need?
   event TransferPreSigned(
     address indexed from,
     address indexed to,
@@ -33,7 +32,6 @@ contract MuzikaCoin is MintableToken, Pausable {
     uint256 value,
     uint256 fee
   );
-  */
 
   mapping (address => bool) public frozenAddress;
 
@@ -198,7 +196,6 @@ contract MuzikaCoin is MintableToken, Pausable {
     bytes _sig
   )
     public
-    onlyNotFrozenAddress(_from)
     onlyNotFrozenAddress(msg.sender)
     whenNotPaused
     returns (bool)
@@ -226,6 +223,8 @@ contract MuzikaCoin is MintableToken, Pausable {
     balances[msg.sender] = balances[msg.sender].add(_fee);
     emit Transfer(_from, msg.sender, _fee);
 
+    emit TransferPreSigned(_from, _to, msg.sender, _value, _fee);
+
     _signatures[_sig] = true;
 
     return true;
@@ -240,7 +239,6 @@ contract MuzikaCoin is MintableToken, Pausable {
     bytes _sig
   )
     public
-    onlyNotFrozenAddress(_from)
     onlyNotFrozenAddress(msg.sender)
     whenNotPaused
     returns (bool)
@@ -264,6 +262,8 @@ contract MuzikaCoin is MintableToken, Pausable {
     balances[msg.sender] = balances[msg.sender].add(_fee);
     emit Transfer(_from, msg.sender, _fee);
 
+    emit ApprovalPreSigned(_from, _to, msg.sender, _value, _fee);
+
     _signatures[_sig] = true;
 
     return true;
@@ -278,7 +278,6 @@ contract MuzikaCoin is MintableToken, Pausable {
     bytes _sig
   )
     public
-    onlyNotFrozenAddress(_from)
     onlyNotFrozenAddress(msg.sender)
     whenNotPaused
     returns (bool)
@@ -302,6 +301,8 @@ contract MuzikaCoin is MintableToken, Pausable {
     balances[msg.sender] = balances[msg.sender].add(_fee);
     emit Transfer(_from, msg.sender, _fee);
 
+    emit ApprovalPreSigned(_from, _to, msg.sender, allowed[_from][_to], _fee);
+
     _signatures[_sig] = true;
 
     return true;
@@ -316,7 +317,6 @@ contract MuzikaCoin is MintableToken, Pausable {
     bytes _sig
   )
     public
-    onlyNotFrozenAddress(_from)
     onlyNotFrozenAddress(msg.sender)
     whenNotPaused
     returns (bool)
@@ -345,6 +345,8 @@ contract MuzikaCoin is MintableToken, Pausable {
     balances[_from] = balances[_from].sub(_fee);
     balances[msg.sender] = balances[msg.sender].add(_fee);
     emit Transfer(_from, msg.sender, _fee);
+
+    emit ApprovalPreSigned(_from, _to, msg.sender, oldValue, _fee);
 
     _signatures[_sig] = true;
 
@@ -459,6 +461,7 @@ contract MuzikaCoin is MintableToken, Pausable {
 
     address _from = recover(hash, _sig);
     require(_from != address(0));
+    require(!frozenAddress[_from]);
 
     return _from;
   }
