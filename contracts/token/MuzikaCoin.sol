@@ -201,11 +201,10 @@ contract MuzikaCoin is MintableToken, Pausable {
     balances[_from] = balances[_from].sub(_burden);
     balances[_to] = balances[_to].add(_value);
     balances[msg.sender] = balances[msg.sender].add(_fee);
-
-    _signatures[_sig] = true;
-
     emit Transfer(_from, _to, _value);
     emit Transfer(_from, msg.sender, _fee);
+
+    _signatures[_sig] = true;
     emit TransferPreSigned(_from, _to, msg.sender, _value, _fee);
 
     return true;
@@ -235,18 +234,20 @@ contract MuzikaCoin is MintableToken, Pausable {
       _version,
       _sig
     );
-    require(!frozenAddress[_from]);
 
+    require(!frozenAddress[_from]);
     require(_fee <= balances[_from]);
 
     allowed[_from][_to] = _value;
-    balances[_from] = balances[_from].sub(_fee);
-    balances[msg.sender] = balances[msg.sender].add(_fee);
+    emit Approval(_from, _to, _value);
+
+    if (_fee > 0) {
+      balances[_from] = balances[_from].sub(_fee);
+      balances[msg.sender] = balances[msg.sender].add(_fee);
+      emit Transfer(_from, msg.sender, _fee);
+    }
 
     _signatures[_sig] = true;
-
-    emit Approval(_from, _to, _value);
-    emit Transfer(_from, msg.sender, _fee);
     emit ApprovalPreSigned(_from, _to, msg.sender, _value, _fee);
 
     return true;
@@ -276,18 +277,20 @@ contract MuzikaCoin is MintableToken, Pausable {
       _version,
       _sig
     );
-    require(!frozenAddress[_from]);
 
+    require(!frozenAddress[_from]);
     require(_fee <= balances[_from]);
 
     allowed[_from][_to] = allowed[_from][_to].add(_value);
-    balances[_from] = balances[_from].sub(_fee);
-    balances[msg.sender] = balances[msg.sender].add(_fee);
+    emit Approval(_from, _to, allowed[_from][_to]);
+
+    if (_fee > 0) {
+      balances[_from] = balances[_from].sub(_fee);
+      balances[msg.sender] = balances[msg.sender].add(_fee);
+      emit Transfer(_from, msg.sender, _fee);
+    }
 
     _signatures[_sig] = true;
-
-    emit Approval(_from, _to, allowed[_from][_to]);
-    emit Transfer(_from, msg.sender, _fee);
     emit ApprovalPreSigned(_from, _to, msg.sender, allowed[_from][_to], _fee);
 
     return true;
@@ -329,13 +332,15 @@ contract MuzikaCoin is MintableToken, Pausable {
     }
 
     allowed[_from][_to] = oldValue;
-    balances[_from] = balances[_from].sub(_fee);
-    balances[msg.sender] = balances[msg.sender].add(_fee);
+    emit Approval(_from, _to, oldValue);
+
+    if (_fee > 0) {
+      balances[_from] = balances[_from].sub(_fee);
+      balances[msg.sender] = balances[msg.sender].add(_fee);
+      emit Transfer(_from, msg.sender, _fee);
+    }
 
     _signatures[_sig] = true;
-
-    emit Approval(_from, _to, oldValue);
-    emit Transfer(_from, msg.sender, _fee);
     emit ApprovalPreSigned(_from, _to, msg.sender, oldValue, _fee);
 
     return true;
