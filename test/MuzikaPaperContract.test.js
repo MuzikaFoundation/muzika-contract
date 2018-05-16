@@ -59,9 +59,7 @@ contract('MuzikaCoin', ([_, owner, seller, buyer, anotherAccount]) => {
 
     const beforePurchase = await token.balanceOf(buyer);
 
-    // console.log('Estimate Increase Approval:', await token.increaseApproval.estimateGas(paper.address, price, {from: buyer}));
     // await token.increaseApproval(paper.address, price, {from: buyer});
-    console.log('Estimate Purchase:', await paper.purchase.estimateGas(nonce, 1, signature));
     await paper.purchase(nonce, 1, signature);
 
     const afterPurchase = await token.balanceOf(buyer);

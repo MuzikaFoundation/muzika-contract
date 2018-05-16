@@ -153,7 +153,6 @@ contract('MuzikaCoin', ([_, owner, recipient, anotherAccount, thirdAccount]) => 
         const signature = await sign(to, amount, fee, nonce);
 
         // another account send the transaction
-        console.log('Estimate Transfer:', await token.transferPreSigned.estimateGas(to, amount, fee, nonce, 1, signature, {from: delegate}));
         await token.transferPreSigned(to, amount, fee, nonce, 1, signature, {from: delegate});
 
         const balanceOfFrom = await token.balanceOf(from);
@@ -303,7 +302,6 @@ contract('MuzikaCoin', ([_, owner, recipient, anotherAccount, thirdAccount]) => 
         const signature = await sign(to, amount, fee, nonce);
 
         // another account send the transaction
-        console.log('Estimate Approval:', await token.approvePreSigned.estimateGas(to, amount, fee, nonce, 1, signature, {from: delegate}));
         await token.approvePreSigned(to, amount, fee, nonce, 1, signature, {from: delegate});
 
         const allowance = await token.allowance(from, to);
@@ -411,7 +409,6 @@ contract('MuzikaCoin', ([_, owner, recipient, anotherAccount, thirdAccount]) => 
 
         nonce = await promisify(web3.eth.getTransactionCount, from);
         signature = await sign(to, incAmount, fee, nonce);
-        console.log('Estimate Increase Approval:', await token.increaseApprovalPreSigned.estimateGas(to, incAmount, fee, nonce, 1, signature, {from: delegate}));
         await token.increaseApprovalPreSigned(to, incAmount, fee, nonce, 1, signature, {from: delegate});
 
         const allowance = await token.allowance(from, to);
@@ -536,7 +533,6 @@ contract('MuzikaCoin', ([_, owner, recipient, anotherAccount, thirdAccount]) => 
 
         nonce = await promisify(web3.eth.getTransactionCount, from);
         signature = await sign(to, decAmount, fee, nonce);
-        console.log('Estimate Decrease Approval:', await token.decreaseApprovalPreSigned.estimateGas(to, decAmount, fee, nonce, 1, signature, {from: delegate}));
         await token.decreaseApprovalPreSigned(to, decAmount, fee, nonce, 1, signature, {from: delegate});
 
         const allowance = await token.allowance(from, to);
