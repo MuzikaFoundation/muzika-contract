@@ -1,9 +1,13 @@
-import assertRevert from './helpers/assertRevert';
-import promisify from './helpers/promisify';
-import toHex from './helpers/toHex';
-import ethUtil from 'ethereumjs-util';
-import ethAbi from 'ethereumjs-abi';
-import sigUtil from 'eth-sig-util';
+import {assertRevert} from './helpers/assertRevert';
+import {promisify} from './helpers/promisify';
+import {
+  MODE_APPROVAL, MODE_DEC_APPROVAL,
+  MODE_INC_APPROVAL,
+  MODE_TRANSFER,
+  signToken,
+  signTypedDataToken,
+  trezorSignToken
+} from './helpers/sign';
 
 const BigNumber = web3.BigNumber;
 const MuzikaCoin = artifacts.require('MuzikaCoin');
@@ -17,29 +21,8 @@ contract('MuzikaCoin', ([_, owner, recipient, anotherAccount, thirdAccount]) => 
   const initialSupply = 10000;
   let token;
 
-  const MODE_TRANSFER = "Transfer";
-  const MODE_APPROVAL = "Approval";
-  const MODE_INC_APPROVAL = "IncApprv";
-  const MODE_DEC_APPROVAL = "DecApprv";
-
-  let signedTypedDataSchema = [
-    "bytes8 Mode",
-    "address Token",
-    "address To",
-    "uint256 Amount",
-    "uint256 Fee",
-    "uint256 Nonce",
-  ];
-
-  let signedTypes = signedTypedDataSchema.map(v => v.split(' ')[0]);
-  let schemaTypes = signedTypedDataSchema.map(v => 'string');
-
   beforeEach(async () => {
     token = await MuzikaCoin.new(initialSupply, {from: owner});
-
-    let schemaPrefix = ethAbi.soliditySHA3(schemaTypes, signedTypedDataSchema);
-
-    await token.upgradePrefixPreSignedSecond(3, ethUtil.bufferToHex(schemaPrefix), {from: owner});
   });
 
   it('should be same with initial supply', async () => {
@@ -132,8 +115,7 @@ contract('MuzikaCoin', ([_, owner, recipient, anotherAccount, thirdAccount]) => 
 
   describe('preSignedFunctions', () => {
     const from = '0x44daf2bb9f91182ec07e99959516287e4bd7db80';
-    const fromPrivKey = '0x33745346434c76712ec3029a3b5bcef55f7fd06e83f5be334dbf603624bbbede';
-    const fromPrivKeyBuf = Buffer.from(fromPrivKey.slice(2), 'hex');
+    const fromPrivateKey = '0x33745346434c76712ec3029a3b5bcef55f7fd06e83f5be334dbf603624bbbede';
 
     let to = recipient;
     let delegate = anotherAccount;
@@ -141,46 +123,9 @@ contract('MuzikaCoin', ([_, owner, recipient, anotherAccount, thirdAccount]) => 
     let amount = 500;
     let fee = 10;
 
-    const signWithMode = async (_mode, _to, _amount, _fee, _nonce) => {
-      let message = ethAbi.soliditySHA3(
-        ['bytes8', 'address', 'address', 'uint256', 'uint256', 'uint256'],
-        [_mode, token.address, _to, _amount, _fee, _nonce]
-      );
-      return await promisify(web3.eth.sign, from, ethUtil.bufferToHex(message));
-    };
-
-    const trezorSignWithMode = async (_mode, _to, _amount, _fee, _nonce) => {
-      const rawSig = ethUtil.ecsign(
-        ethAbi.soliditySHA3(
-          ['string', 'bytes32'],
-          [
-            '\x19Ethereum Signed Message:\n\x20',
-            ethAbi.soliditySHA3(
-              ['bytes8', 'address', 'address', 'uint256', 'uint256', 'uint256'],
-              [_mode, token.address, _to, _amount, _fee, _nonce]
-            )
-          ]
-        ),
-        fromPrivKeyBuf
-      );
-      return Promise.resolve(ethUtil.bufferToHex(sigUtil.concatSig(rawSig.v, rawSig.r, rawSig.s)));
-    };
-
-    const signTypedDataWithMode = async (_mode, _to, _amount, _fee, _nonce) => {
-      const typedData = [
-        {type: 'bytes8', name: 'Mode', value: _mode},
-        {type: 'address', name: 'Token', value: token.address},
-        {type: 'address', name: 'To', value: _to},
-        {type: 'uint256', name: 'Amount', value: _amount},
-        {type: 'uint256', name: 'Fee', value: _fee},
-        {type: 'uint256', name: 'Nonce', value: _nonce},
-      ];
-      return Promise.resolve(sigUtil.signTypedData(fromPrivKeyBuf, {data: typedData}));
-    };
-
     beforeEach(async () => {
       // new account has no ether
-      await promisify(web3.personal.importRawKey, fromPrivKey, 'password');
+      await promisify(web3.personal.importRawKey, fromPrivateKey, 'password');
       await token.transfer(from, initialTransferAmount, {from: owner});
 
       to = recipient;
@@ -190,10 +135,15 @@ contract('MuzikaCoin', ([_, owner, recipient, anotherAccount, thirdAccount]) => 
       fee = 10;
     });
 
+    // sign functions
+    let sign, trezorSign, signTypedData;
+
     describe('transferPreSigned()', () => {
-      const sign = signWithMode.bind(null, MODE_TRANSFER);
-      const trezorSign = trezorSignWithMode.bind(null, MODE_TRANSFER);
-      const signTypedData = signTypedDataWithMode.bind(null, MODE_TRANSFER);
+      beforeEach(() => {
+        sign = signToken.bind(null, token.address, from, MODE_TRANSFER);
+        trezorSign = trezorSignToken.bind(null, token.address, fromPrivateKey, MODE_TRANSFER);
+        signTypedData = signTypedDataToken.bind(null, token.address, fromPrivateKey, MODE_TRANSFER);
+      });
 
       it('should support to delegate transferring correctly', async () => {
         // 'from' wants to transfer to 'to' without use ether
@@ -203,6 +153,7 @@ contract('MuzikaCoin', ([_, owner, recipient, anotherAccount, thirdAccount]) => 
         const signature = await sign(to, amount, fee, nonce);
 
         // another account send the transaction
+        console.log('Estimate Transfer:', await token.transferPreSigned.estimateGas(to, amount, fee, nonce, 1, signature, {from: delegate}));
         await token.transferPreSigned(to, amount, fee, nonce, 1, signature, {from: delegate});
 
         const balanceOfFrom = await token.balanceOf(from);
@@ -338,9 +289,11 @@ contract('MuzikaCoin', ([_, owner, recipient, anotherAccount, thirdAccount]) => 
     });
 
     describe('approvePreSigned()', () => {
-      const sign = signWithMode.bind(null, MODE_APPROVAL);
-      const trezorSign = trezorSignWithMode.bind(null, MODE_APPROVAL);
-      const signTypedData = signTypedDataWithMode.bind(null, MODE_APPROVAL);
+      beforeEach(() => {
+        sign = signToken.bind(null, token.address, from, MODE_APPROVAL);
+        trezorSign = trezorSignToken.bind(null, token.address, fromPrivateKey, MODE_APPROVAL);
+        signTypedData = signTypedDataToken.bind(null, token.address, fromPrivateKey, MODE_APPROVAL);
+      });
 
       it('should support to delegate approving correctly', async () => {
         // 'from' wants to transfer to 'to' without use ether
@@ -350,6 +303,7 @@ contract('MuzikaCoin', ([_, owner, recipient, anotherAccount, thirdAccount]) => 
         const signature = await sign(to, amount, fee, nonce);
 
         // another account send the transaction
+        console.log('Estimate Approval:', await token.approvePreSigned.estimateGas(to, amount, fee, nonce, 1, signature, {from: delegate}));
         await token.approvePreSigned(to, amount, fee, nonce, 1, signature, {from: delegate});
 
         const allowance = await token.allowance(from, to);
@@ -433,17 +387,18 @@ contract('MuzikaCoin', ([_, owner, recipient, anotherAccount, thirdAccount]) => 
     });
 
     describe('increaseApprovalPreSigned()', () => {
-      const sign = signWithMode.bind(null, MODE_INC_APPROVAL);
-      const trezorSign = trezorSignWithMode.bind(null, MODE_INC_APPROVAL);
-      const signTypedData = signTypedDataWithMode.bind(null, MODE_INC_APPROVAL);
-
-      const signApproval = signWithMode.bind(null, MODE_APPROVAL);
-      const trezorSignApproval = trezorSignWithMode.bind(null, MODE_APPROVAL);
-      const signTypedDataApproval = signTypedDataWithMode.bind(null, MODE_APPROVAL);
-
+      let signApproval, trezorSignApproval, signTypedDataApproval;
       let incAmount = 100;
 
       beforeEach(() => {
+        sign = signToken.bind(null, token.address, from, MODE_INC_APPROVAL);
+        trezorSign = trezorSignToken.bind(null, token.address, fromPrivateKey, MODE_INC_APPROVAL);
+        signTypedData = signTypedDataToken.bind(null, token.address, fromPrivateKey, MODE_INC_APPROVAL);
+
+        signApproval = signToken.bind(null, token.address, from, MODE_APPROVAL);
+        trezorSignApproval = trezorSignToken.bind(null, token.address, fromPrivateKey, MODE_APPROVAL);
+        signTypedDataApproval = signTypedDataToken.bind(null, token.address, fromPrivateKey, MODE_APPROVAL);
+
         incAmount = 100;
       });
 
@@ -456,6 +411,7 @@ contract('MuzikaCoin', ([_, owner, recipient, anotherAccount, thirdAccount]) => 
 
         nonce = await promisify(web3.eth.getTransactionCount, from);
         signature = await sign(to, incAmount, fee, nonce);
+        console.log('Estimate Increase Approval:', await token.increaseApprovalPreSigned.estimateGas(to, incAmount, fee, nonce, 1, signature, {from: delegate}));
         await token.increaseApprovalPreSigned(to, incAmount, fee, nonce, 1, signature, {from: delegate});
 
         const allowance = await token.allowance(from, to);
@@ -556,17 +512,18 @@ contract('MuzikaCoin', ([_, owner, recipient, anotherAccount, thirdAccount]) => 
     });
 
     describe('decreaseApprovalPreSigned()', () => {
-      const sign = signWithMode.bind(null, MODE_DEC_APPROVAL);
-      const trezorSign = trezorSignWithMode.bind(null, MODE_DEC_APPROVAL);
-      const signTypedData = signTypedDataWithMode.bind(null, MODE_DEC_APPROVAL);
-
-      const signApproval = signWithMode.bind(null, MODE_APPROVAL);
-      const trezorSignApproval = trezorSignWithMode.bind(null, MODE_APPROVAL);
-      const signTypedDataApproval = signTypedDataWithMode.bind(null, MODE_APPROVAL);
-
+      let signApproval, trezorSignApproval, signTypedDataApproval;
       let decAmount = 100;
 
       beforeEach(() => {
+        sign = signToken.bind(null, token.address, from, MODE_DEC_APPROVAL);
+        trezorSign = trezorSignToken.bind(null, token.address, fromPrivateKey, MODE_DEC_APPROVAL);
+        signTypedData = signTypedDataToken.bind(null, token.address, fromPrivateKey, MODE_DEC_APPROVAL);
+
+        signApproval = signToken.bind(null, token.address, from, MODE_APPROVAL);
+        trezorSignApproval = trezorSignToken.bind(null, token.address, fromPrivateKey, MODE_APPROVAL);
+        signTypedDataApproval = signTypedDataToken.bind(null, token.address, fromPrivateKey, MODE_APPROVAL);
+
         decAmount = 100;
       });
 
@@ -579,6 +536,7 @@ contract('MuzikaCoin', ([_, owner, recipient, anotherAccount, thirdAccount]) => 
 
         nonce = await promisify(web3.eth.getTransactionCount, from);
         signature = await sign(to, decAmount, fee, nonce);
+        console.log('Estimate Decrease Approval:', await token.decreaseApprovalPreSigned.estimateGas(to, decAmount, fee, nonce, 1, signature, {from: delegate}));
         await token.decreaseApprovalPreSigned(to, decAmount, fee, nonce, 1, signature, {from: delegate});
 
         const allowance = await token.allowance(from, to);

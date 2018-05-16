@@ -1,4 +1,4 @@
-export default (...args) => {
+export function promisify (...args) {
   const func = [].shift.call(args);
   return new Promise((res, rej) => {
     func(...args, (err, data) => {
@@ -6,4 +6,4 @@ export default (...args) => {
       return res(data);
     });
   });
-};
+}
