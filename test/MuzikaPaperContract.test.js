@@ -11,7 +11,7 @@ require('chai')
   .use(require('chai-bignumber')(BigNumber))
   .should();
 
-contract('MuzikaCoin', ([_, owner, seller, buyer, anotherAccount]) => {
+contract('MuzikaPaperContract', ([_, owner, seller, buyer, anotherAccount]) => {
   const initialSupply = 10000;
   let token;
   let paper;

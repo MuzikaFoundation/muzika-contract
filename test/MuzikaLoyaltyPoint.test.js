@@ -10,7 +10,7 @@ require('chai')
   .use(require('chai-bignumber')(BigNumber))
   .should();
 
-contract('MuzikaCoin', ([_, owner, recipient, anotherAccount]) => {
+contract('MuzikaLoyaltyPoint', ([_, owner, recipient, anotherAccount]) => {
   const initialSupply = 10000;
   const exchangeRatio = 80;
 
