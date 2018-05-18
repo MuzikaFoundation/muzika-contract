@@ -1,4 +1,4 @@
-[![Build Status](https://github-apps.travis-ci.com/MuzikaFoundation/muzika-contract.svg?branch=master)](https://github-apps.travis-ci.com/MuzikaFoundation/muzika-contract)
+[![Build Status](https://travis-ci.com/MuzikaFoundation/muzika-contract.svg?branch=master)](https://travis-ci.com/MuzikaFoundation/muzika-contract)
 
 1. web3, truffle global install
 ```
