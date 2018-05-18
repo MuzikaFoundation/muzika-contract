@@ -48,7 +48,7 @@ contract MuzikaCoin is MintableToken, Pausable {
   constructor(uint256 initialSupply) public {
     totalSupply_ = initialSupply;
     balances[msg.sender] = initialSupply;
-    emit Transfer(0x0, msg.sender, initialSupply);
+    emit Transfer(address(0), msg.sender, initialSupply);
   }
 
   /**
