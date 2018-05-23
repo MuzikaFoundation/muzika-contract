@@ -358,7 +358,7 @@ contract MuzikaCoin is MintableToken, Pausable {
 
     increaseApproval(_spender, _addedValue);
 
-    // solium-disable-next-line security/no-call-value
+    // solium-disable-next-line security/no-low-level-calls
     require(_spender.call(_data));
 
     return true;
@@ -380,7 +380,7 @@ contract MuzikaCoin is MintableToken, Pausable {
 
     increaseApprovalPreSigned(_to, _value, _fee, _nonce, _version, _sig);
 
-    // solium-disable-next-line security/no-call-value
+    // solium-disable-next-line security/no-low-level-calls
     require(_to.call(_data));
 
     return true;

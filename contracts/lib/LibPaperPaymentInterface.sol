@@ -24,7 +24,8 @@ library LibPaperPaymentInterface {
     uint256 _price,
     string _ipfsFileHash,
     string _originalFileHash
-  ) public;
+  )
+    public;
 
   function seller(Paper storage paper) public view returns (address);
 
@@ -47,5 +48,6 @@ library LibPaperPaymentInterface {
     uint256 _nonce,
     uint8 _version,
     bytes _sig
-  ) public returns (bool);
+  )
+    public returns (bool);
 }
