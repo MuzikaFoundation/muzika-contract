@@ -25,7 +25,7 @@ library LibPaperPayment {
   }
 
   function seller(LibPaperPaymentInterface.Paper storage paper) public view returns (address) {
-    return address(this);
+    return paper._seller;
   }
 
   function price(LibPaperPaymentInterface.Paper storage paper) public view returns (uint256) {

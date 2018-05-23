@@ -24,43 +24,28 @@ library LibPaperPaymentInterface {
     uint256 _price,
     string _ipfsFileHash,
     string _originalFileHash
-  ) public {
-    assert(false);
-  }
+  ) public;
 
-  function seller(Paper storage paper) public view returns (address) {
-    assert(false);
-  }
+  function seller(Paper storage paper) public view returns (address);
 
-  function price(Paper storage paper) public view returns (uint256) {
-    assert(false);
-  }
+  function price(Paper storage paper) public view returns (uint256);
 
-  function forSale(Paper storage paper) public view returns (bool) {
-    assert(false);
-  }
+  function forSale(Paper storage paper) public view returns (bool);
 
-  function originalFileHash(Paper storage paper) public view returns (string) {
-    assert(false);
-  }
+  function originalFileHash(Paper storage paper) public view returns (string);
 
-  function ipfsFileHash(Paper storage paper) public view returns (string) {
-    assert(false);
-  }
+  function ipfsFileHash(Paper storage paper) public view returns (string);
 
-  function isPurchased(Paper storage paper, address user) public view returns (bool) {
-    assert(false);
-  }
+  function isPurchased(Paper storage paper, address user) public view returns (bool);
 
-  function soldOut(Paper storage paper) public {
-    assert(false);
-  }
+  function soldOut(Paper storage paper) public;
 
-  function purchase(Paper storage paper, address _buyer) public returns (bool) {
-    assert(false);
-  }
+  function purchase(Paper storage paper, address _buyer) public returns (bool);
 
-  function purchasePreSigned(Paper storage paper, uint256 _nonce, uint8 _version, bytes _sig) public returns (bool) {
-    assert(false);
-  }
+  function purchasePreSigned(
+    Paper storage paper,
+    uint256 _nonce,
+    uint8 _version,
+    bytes _sig
+  ) public returns (bool);
 }
