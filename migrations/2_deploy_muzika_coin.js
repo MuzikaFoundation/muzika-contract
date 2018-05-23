@@ -10,9 +10,7 @@ module.exports = (deployer) => {
   const decimals = 18;
   const initialSupply = 1e8;
 
-  deployer.deploy(PreSignedContract).then(() => {
-    return PreSignedContract.deployed();
-  }).then(preSignedContract => {
+  deployer.deploy(PreSignedContract).then(preSignedContract => {
     let signedTypedDataSchema = [
       "bytes8 Mode",
       "address Token",
