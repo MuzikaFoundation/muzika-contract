@@ -1,4 +1,4 @@
-pragma solidity ^0.4.23;
+pragma solidity ^0.4.24;
 
 import '../../zeppelin-solidity/contracts/ownership/Ownable.sol';
 
@@ -64,23 +64,27 @@ contract PreSignedContract is Ownable {
   ) public view returns (bytes32 hash) {
     if (_version <= 2) {
       hash = keccak256(
-        _mode,
-        _token,
-        _to,
-        _value,
-        _fee,
-        _nonce
+        abi.encodePacked(
+          _mode,
+          _token,
+          _to,
+          _value,
+          _fee,
+          _nonce
+        )
       );
     } else {
       // Support SignTypedData flexibly
       hash = keccak256(
-        _prefixPreSignedFirst[_version],
-        _mode,
-        _token,
-        _to,
-        _value,
-        _fee,
-        _nonce
+        abi.encodePacked(
+          _prefixPreSignedFirst[_version],
+          _mode,
+          _token,
+          _to,
+          _value,
+          _fee,
+          _nonce
+        )
       );
     }
   }
@@ -109,22 +113,28 @@ contract PreSignedContract is Ownable {
         return hash;
       } else if (_version == 1) {
         return keccak256(
-          '\x19Ethereum Signed Message:\n32',
-          hash
+          abi.encodePacked(
+            '\x19Ethereum Signed Message:\n32',
+            hash
+          )
         );
       } else {
         // Support Standard Prefix (Trezor)
         return keccak256(
-          '\x19Ethereum Signed Message:\n\x20',
-          hash
+          abi.encodePacked(
+            '\x19Ethereum Signed Message:\n\x20',
+            hash
+          )
         );
       }
     } else {
       // Support SignTypedData flexibly
       if (_prefixPreSignedSecond[_version].length > 0) {
         return keccak256(
-          _prefixPreSignedSecond[_version],
-          hash
+          abi.encodePacked(
+            _prefixPreSignedSecond[_version],
+            hash
+          )
         );
       } else {
         return hash;
