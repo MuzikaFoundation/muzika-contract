@@ -345,4 +345,44 @@ contract MuzikaCoin is MintableToken, Pausable {
 
     return true;
   }
+
+  function increaseApprovalAndCall(
+    address _spender,
+    uint _addedValue,
+    bytes _data
+  )
+    public
+    returns (bool)
+  {
+    require(_spender != address(this));
+
+    increaseApproval(_spender, _addedValue);
+
+    // solium-disable-next-line security/no-call-value
+    require(_spender.call(_data));
+
+    return true;
+  }
+
+  function increaseApprovalPreSignedAndCall(
+    address _to,
+    uint256 _value,
+    uint256 _fee,
+    uint256 _nonce,
+    uint8 _version,
+    bytes _sig,
+    bytes _data
+  )
+    public
+    returns (bool)
+  {
+    require(_to != address(this));
+
+    increaseApprovalPreSigned(_to, _value, _fee, _nonce, _version, _sig);
+
+    // solium-disable-next-line security/no-call-value
+    require(_to.call(_data));
+
+    return true;
+  }
 }
