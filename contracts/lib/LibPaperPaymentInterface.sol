@@ -42,12 +42,4 @@ library LibPaperPaymentInterface {
   function soldOut(Paper storage paper) public;
 
   function purchase(Paper storage paper, address _buyer) public returns (bool);
-
-  function purchasePreSigned(
-    Paper storage paper,
-    uint256 _nonce,
-    uint8 _version,
-    bytes _sig
-  )
-    public returns (bool);
 }

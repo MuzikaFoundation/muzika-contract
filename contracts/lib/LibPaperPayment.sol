@@ -71,38 +71,4 @@ library LibPaperPayment {
 
     return true;
   }
-
-  function purchasePreSigned(
-    LibPaperPaymentInterface.Paper storage paper,
-    uint256 _nonce,
-    uint8 _version,
-    bytes _sig
-  ) public returns (bool) {
-    require(paper._forSale);
-    require(paper._seller != msg.sender);
-
-    address _buyer = paper._preSignedContract.increaseApprovalPreSignedCheck(
-      paper._token,
-      address(this),
-      paper._price,
-      0,
-      _nonce,
-      _version,
-      _sig
-    );
-
-    require(!paper._purchased[_buyer]);
-
-    paper._purchased[_buyer] = true;
-
-    if (paper._price > 0) {
-      uint256 _fee = paper._price.div(100).mul(5); // 5% fee
-
-      paper._token.increaseApprovalPreSigned(address(this), paper._price, 0, _nonce, _version, _sig);
-      paper._token.transferFrom(_buyer, paper._seller, paper._price.sub(_fee));
-      paper._token.transferFrom(_buyer, msg.sender, _fee); // payback to sender
-    }
-
-    return true;
-  }
 }

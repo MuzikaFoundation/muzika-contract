@@ -66,6 +66,7 @@ contract('MuzikaPaperContract', ([owner, seller, buyer, anotherAccount]) => {
     sign = signToken.bind(null, token.address, buyer, MODE_INC_APPROVAL);
   });
 
+  /*
   it('works for purchase by PreSigned function (version 1 of purchase)', async () => {
     let nonce = await promisify(web3.eth.getTransactionCount, buyer);
     let signature = await sign(paper.address, price, 0, nonce);
@@ -102,13 +103,14 @@ contract('MuzikaPaperContract', ([owner, seller, buyer, anotherAccount]) => {
     isPurchased.should.be.equal(true);
     balanceOfSeller.should.be.bignumber.not.equal(0);
   });
+  */
 
   it('works for purchase by increase approval without PreSigned function (version 3 of purchase)', async () => {
     const beforePurchase = await token.balanceOf(buyer);
 
     // await token.increaseApproval(paper.address, price, {from: buyer});
-    const callData = ethUtil.bufferToHex(ethAbi.simpleEncode('purchase(address)', buyer));
-    await token.increaseApprovalAndCall(paper.address, price, callData, {from: buyer});
+    // const callData = ethUtil.bufferToHex(ethAbi.simpleEncode('purchase(address)', buyer));
+    await token.increaseApprovalAndCall(paper.address, price, '0x', {from: buyer});
 
     const afterPurchase = await token.balanceOf(buyer);
     const isPurchased = await paper.isPurchased(buyer);

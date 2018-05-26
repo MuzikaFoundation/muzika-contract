@@ -2,7 +2,7 @@ pragma solidity ^0.4.24;
 
 import '../../zeppelin-solidity/contracts/token/ERC20/MintableToken.sol';
 import '../../zeppelin-solidity/contracts/lifecycle/Pausable.sol';
-import '../lib/PreSignedContract.sol';
+import '../lib/ApprovalAndCallFallBack.sol';
 
 contract MuzikaCoin is MintableToken, Pausable {
   string public name = 'Muzika';
@@ -14,26 +14,7 @@ contract MuzikaCoin is MintableToken, Pausable {
   event FreezeAddress(address indexed target);
   event UnfreezeAddress(address indexed target);
 
-  event TransferPreSigned(
-    address indexed from,
-    address indexed to,
-    address indexed delegate,
-    uint256 value,
-    uint256 fee
-  );
-  event ApprovalPreSigned(
-    address indexed owner,
-    address indexed spender,
-    address indexed delegate,
-    uint256 value,
-    uint256 fee
-  );
-
   mapping (address => bool) public frozenAddress;
-
-  mapping (bytes => bool) internal _signatures;
-
-  PreSignedContract internal _preSignedContract = PreSignedContract(0x1111222233334444555566667777888899990000);
 
   modifier onlyNotFrozenAddress(address _target) {
     require(!frozenAddress[_target]);
@@ -162,190 +143,6 @@ contract MuzikaCoin is MintableToken, Pausable {
     return super.decreaseApproval(_spender, _subtractedValue);
   }
 
-  /**
-   * @dev Be careful to use delegateTransfer.
-   * @dev If attacker whose balance is less than sum of fee and amount
-   * @dev requests constantly transferring using delegateTransfer/delegateApprove to someone,
-   * @dev he or she may lose all ether to process these requests.
-   */
-  function transferPreSigned(
-    address _to,
-    uint256 _value,
-    uint256 _fee,
-    uint256 _nonce,
-    uint8 _version,
-    bytes _sig
-  )
-    public
-    onlyNotFrozenAddress(msg.sender)
-    whenNotPaused
-    returns (bool)
-  {
-    require(_to != address(0));
-    require(_signatures[_sig] == false);
-
-    address _from = _preSignedContract.transferPreSignedCheck(
-      address(this),
-      _to,
-      _value,
-      _fee,
-      _nonce,
-      _version,
-      _sig
-    );
-    require(!frozenAddress[_from]);
-
-    uint256 _burden = _value.add(_fee);
-    require(_burden <= balances[_from]);
-
-    balances[_from] = balances[_from].sub(_burden);
-    balances[_to] = balances[_to].add(_value);
-    balances[msg.sender] = balances[msg.sender].add(_fee);
-    emit Transfer(_from, _to, _value);
-    emit Transfer(_from, msg.sender, _fee);
-
-    _signatures[_sig] = true;
-    emit TransferPreSigned(_from, _to, msg.sender, _value, _fee);
-
-    return true;
-  }
-
-  function approvePreSigned(
-    address _to,
-    uint256 _value,
-    uint256 _fee,
-    uint256 _nonce,
-    uint8 _version,
-    bytes _sig
-  )
-    public
-    onlyNotFrozenAddress(msg.sender)
-    whenNotPaused
-    returns (bool)
-  {
-    require(_signatures[_sig] == false);
-
-    address _from = _preSignedContract.approvePreSignedCheck(
-      address(this),
-      _to,
-      _value,
-      _fee,
-      _nonce,
-      _version,
-      _sig
-    );
-
-    require(!frozenAddress[_from]);
-    require(_fee <= balances[_from]);
-
-    allowed[_from][_to] = _value;
-    emit Approval(_from, _to, _value);
-
-    if (_fee > 0) {
-      balances[_from] = balances[_from].sub(_fee);
-      balances[msg.sender] = balances[msg.sender].add(_fee);
-      emit Transfer(_from, msg.sender, _fee);
-    }
-
-    _signatures[_sig] = true;
-    emit ApprovalPreSigned(_from, _to, msg.sender, _value, _fee);
-
-    return true;
-  }
-
-  function increaseApprovalPreSigned(
-    address _to,
-    uint256 _value,
-    uint256 _fee,
-    uint256 _nonce,
-    uint8 _version,
-    bytes _sig
-  )
-    public
-    onlyNotFrozenAddress(msg.sender)
-    whenNotPaused
-    returns (bool)
-  {
-    require(_signatures[_sig] == false);
-
-    address _from = _preSignedContract.increaseApprovalPreSignedCheck(
-      address(this),
-      _to,
-      _value,
-      _fee,
-      _nonce,
-      _version,
-      _sig
-    );
-
-    require(!frozenAddress[_from]);
-    require(_fee <= balances[_from]);
-
-    allowed[_from][_to] = allowed[_from][_to].add(_value);
-    emit Approval(_from, _to, allowed[_from][_to]);
-
-    if (_fee > 0) {
-      balances[_from] = balances[_from].sub(_fee);
-      balances[msg.sender] = balances[msg.sender].add(_fee);
-      emit Transfer(_from, msg.sender, _fee);
-    }
-
-    _signatures[_sig] = true;
-    emit ApprovalPreSigned(_from, _to, msg.sender, allowed[_from][_to], _fee);
-
-    return true;
-  }
-
-  function decreaseApprovalPreSigned(
-    address _to,
-    uint256 _value,
-    uint256 _fee,
-    uint256 _nonce,
-    uint8 _version,
-    bytes _sig
-  )
-    public
-    onlyNotFrozenAddress(msg.sender)
-    whenNotPaused
-    returns (bool)
-  {
-    require(_signatures[_sig] == false);
-
-    address _from = _preSignedContract.decreaseApprovalPreSignedCheck(
-      address(this),
-      _to,
-      _value,
-      _fee,
-      _nonce,
-      _version,
-      _sig
-    );
-    require(!frozenAddress[_from]);
-
-    require(_fee <= balances[_from]);
-
-    uint256 oldValue = allowed[_from][_to];
-    if (_value > oldValue) {
-      oldValue = 0;
-    } else {
-      oldValue = oldValue.sub(_value);
-    }
-
-    allowed[_from][_to] = oldValue;
-    emit Approval(_from, _to, oldValue);
-
-    if (_fee > 0) {
-      balances[_from] = balances[_from].sub(_fee);
-      balances[msg.sender] = balances[msg.sender].add(_fee);
-      emit Transfer(_from, msg.sender, _fee);
-    }
-
-    _signatures[_sig] = true;
-    emit ApprovalPreSigned(_from, _to, msg.sender, oldValue, _fee);
-
-    return true;
-  }
-
   function increaseApprovalAndCall(
     address _spender,
     uint _addedValue,
@@ -358,30 +155,14 @@ contract MuzikaCoin is MintableToken, Pausable {
 
     increaseApproval(_spender, _addedValue);
 
-    // solium-disable-next-line security/no-low-level-calls
-    require(_spender.call(_data));
-
-    return true;
-  }
-
-  function increaseApprovalPreSignedAndCall(
-    address _to,
-    uint256 _value,
-    uint256 _fee,
-    uint256 _nonce,
-    uint8 _version,
-    bytes _sig,
-    bytes _data
-  )
-    public
-    returns (bool)
-  {
-    require(_to != address(this));
-
-    increaseApprovalPreSigned(_to, _value, _fee, _nonce, _version, _sig);
-
-    // solium-disable-next-line security/no-low-level-calls
-    require(_to.call(_data));
+    require(
+      ApprovalAndCallFallBack(_spender).receiveApproval(
+        msg.sender,
+        allowed[msg.sender][_spender],
+        address(this),
+        _data
+      )
+    );
 
     return true;
   }

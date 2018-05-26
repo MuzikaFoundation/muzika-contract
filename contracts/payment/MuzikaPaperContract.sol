@@ -2,11 +2,12 @@ pragma solidity ^0.4.24;
 
 import '../../zeppelin-solidity/contracts/ownership/Ownable.sol';
 import '../lib/LibPaperPaymentInterface.sol';
+import '../lib/ApprovalAndCallFallBack.sol';
 
 /**
  * @dev Work In Progress (do not deploy this contract to production)
  */
-contract MuzikaPaperContract is Ownable {
+contract MuzikaPaperContract is Ownable, ApprovalAndCallFallBack {
   LibPaperPaymentInterface.Paper internal _paper;
   using LibPaperPaymentInterface for LibPaperPaymentInterface.Paper;
 
@@ -51,7 +52,14 @@ contract MuzikaPaperContract is Ownable {
     return _paper.purchase(_buyer);
   }
 
-  function purchasePreSigned(uint256 _nonce, uint8 _version, bytes _sig) public returns (bool) {
-    return _paper.purchasePreSigned(_nonce, _version, _sig);
+  function receiveApproval(
+    address _owner,
+    uint256 /* _amount */,
+    address /* _token */,
+    bytes /* _data */
+  )
+    public returns (bool)
+  {
+    return _paper.purchase(_owner);
   }
 }
