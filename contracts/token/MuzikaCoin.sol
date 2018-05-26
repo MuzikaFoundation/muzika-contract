@@ -5,7 +5,7 @@ import '../../zeppelin-solidity/contracts/lifecycle/Pausable.sol';
 import '../lib/PreSignedContract.sol';
 
 contract MuzikaCoin is MintableToken, Pausable {
-  string public name = 'MUZIKA COIN';
+  string public name = 'Muzika';
   string public symbol = 'MZK';
   uint8 public decimals = 18;
 
