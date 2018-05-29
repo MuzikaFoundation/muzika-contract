@@ -17,11 +17,11 @@ contract('MuzikaLoyaltyPoint', ([_, owner, recipient, anotherAccount]) => {
   let token;
   let loyalty;
 
-  let backedUpByteCode = MuzikaLoyaltyPoint.unlinked_binary;
+  let backedUpByteCode = MuzikaLoyaltyPoint.bytecode;
 
   afterEach(() => {
     // Restore bytecode of paper contract
-    MuzikaLoyaltyPoint.unlinked_binary = backedUpByteCode;
+    MuzikaLoyaltyPoint.bytecode = backedUpByteCode;
   });
 
   beforeEach(async () => {
@@ -30,7 +30,7 @@ contract('MuzikaLoyaltyPoint', ([_, owner, recipient, anotherAccount]) => {
     /* Manually replace address of PreSignedContract in compile stage
      * So, you should not be input to the constructor on contracts
      */
-    MuzikaLoyaltyPoint.unlinked_binary = MuzikaLoyaltyPoint.unlinked_binary
+    MuzikaLoyaltyPoint.bytecode = MuzikaLoyaltyPoint.bytecode
       .replace('9999888877776666555544443333222211110000', token.address.slice(2));
 
     loyalty = await MuzikaLoyaltyPoint.new({from: owner});

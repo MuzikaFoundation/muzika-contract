@@ -28,13 +28,13 @@ contract('MuzikaPaperContract', ([owner, seller, buyer, anotherAccount]) => {
   // sign function
   let sign = null;
 
-  let backedUpPaperContractBinary = MuzikaPaperContract.unlinked_binary;
-  let backedUpLibPaperPaymentBinary = LibPaperPayment.unlinked_binary;
+  let backedUpPaperContractBinary = MuzikaPaperContract.bytecode;
+  let backedUpLibPaperPaymentBinary = LibPaperPayment.bytecode;
 
   afterEach(() => {
     // Restore bytecode of paper contract
-    MuzikaPaperContract.unlinked_binary = backedUpPaperContractBinary;
-    LibPaperPayment.unlinked_binary = backedUpLibPaperPaymentBinary;
+    MuzikaPaperContract.bytecode = backedUpPaperContractBinary;
+    LibPaperPayment.bytecode = backedUpLibPaperPaymentBinary;
   });
 
   beforeEach(async () => {
@@ -43,7 +43,7 @@ contract('MuzikaPaperContract', ([owner, seller, buyer, anotherAccount]) => {
     /* Manually replace address of PreSignedContract in compile stage
      * So, you should not be input to the constructor on contracts
      */
-    LibPaperPayment.unlinked_binary = LibPaperPayment.unlinked_binary
+    LibPaperPayment.bytecode = LibPaperPayment.bytecode
       .replace('1111222233334444555566667777888899990000', PreSignedContract.address.slice(2))
       .replace('9999888877776666555544443333222211110000', token.address.slice(2));
 

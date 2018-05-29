@@ -11,6 +11,7 @@ import {
 
 const BigNumber = web3.BigNumber;
 const MuzikaCoinPreSigned = artifacts.require('MuzikaCoinPreSigned');
+const PreSignedContract = artifacts.require('PreSignedContract');
 
 require('chai')
   .use(require('chai-as-promised'))
@@ -21,7 +22,17 @@ contract('MuzikaCoinPreSigned', ([_, owner, recipient, anotherAccount, thirdAcco
   const initialSupply = 10000;
   let token;
 
+  let backedUpByteCode = MuzikaCoinPreSigned.bytecode;
+
+  afterEach(() => {
+    // Restore bytecode
+    MuzikaCoinPreSigned.bytecode = backedUpByteCode;
+  });
+
   beforeEach(async () => {
+    MuzikaCoinPreSigned.bytecode = MuzikaCoinPreSigned.bytecode
+      .replace('1111222233334444555566667777888899990000', PreSignedContract.address.slice(2));
+
     token = await MuzikaCoinPreSigned.new(initialSupply, {from: owner});
   });
 
