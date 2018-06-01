@@ -8,6 +8,10 @@ import './LibPaperPaymentInterface.sol';
 library LibPaperPayment {
   using SafeMath for uint256;
 
+  event Purchase(address indexed buyer, uint price);
+  event SoldOut(uint at);
+  event Resale(uint at);
+
   function create(
     LibPaperPaymentInterface.Paper storage paper,
     address _seller,
@@ -47,12 +51,21 @@ library LibPaperPayment {
   }
 
   function isPurchased(LibPaperPaymentInterface.Paper storage paper, address user) public view returns (bool) {
-    return paper._purchased[user];
+    return msg.sender == paper._seller || paper._purchased[user];
   }
 
   function soldOut(LibPaperPaymentInterface.Paper storage paper) public {
     require(msg.sender == paper._seller);
+    require(paper._forSale == true);
     paper._forSale = false;
+    emit SoldOut(now);
+  }
+
+  function resale(LibPaperPaymentInterface.Paper storage paper) public {
+    require(msg.sender == paper._seller);
+    require(paper._forSale == false);
+    paper._forSale = true;
+    emit Resale(now);
   }
 
   function purchase(LibPaperPaymentInterface.Paper storage paper, address _buyer) public returns (bool) {
@@ -68,6 +81,8 @@ library LibPaperPayment {
       paper._token.transferFrom(_buyer, paper._seller, paper._price.sub(_fee));
       paper._token.transferFrom(_buyer, msg.sender, _fee); // payback to sender
     }
+
+    emit Purchase(_buyer, paper._price);
 
     return true;
   }

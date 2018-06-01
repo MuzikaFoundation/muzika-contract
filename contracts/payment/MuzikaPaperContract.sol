@@ -11,6 +11,10 @@ contract MuzikaPaperContract is Ownable, ApprovalAndCallFallBack {
   LibPaperPaymentInterface.Paper internal _paper;
   using LibPaperPaymentInterface for LibPaperPaymentInterface.Paper;
 
+  event Purchase(address indexed buyer, uint price);
+  event SoldOut(uint at);
+  event Resale(uint at);
+
   constructor(
     address _seller,
     uint256 _price,
@@ -46,6 +50,10 @@ contract MuzikaPaperContract is Ownable, ApprovalAndCallFallBack {
 
   function soldOut() public {
     return _paper.soldOut();
+  }
+
+  function resale() public {
+    return _paper.resale();
   }
 
   function purchase(address _buyer) public returns (bool) {

@@ -1,4 +1,7 @@
 import {promisify} from './helpers/promisify';
+import {assertRevert} from './helpers/assertRevert';
+import {inLogs, inTransaction} from './helpers/expectEvent';
+import {extractEvent} from './helpers/extractEvent';
 import {MODE_INC_APPROVAL, signToken} from './helpers/sign';
 import ethAbi from 'ethereumjs-abi';
 import ethUtil from 'ethereumjs-util';
@@ -16,7 +19,7 @@ require('chai')
   .use(require('chai-bignumber')(BigNumber))
   .should();
 
-contract('MuzikaPaperContract', ([owner, seller, buyer, anotherAccount]) => {
+contract('MuzikaPaperContract', ([_, owner, seller, buyer, anotherAccount]) => {
   const initialSupply = 10000;
   let token;
   let paper;
@@ -38,7 +41,7 @@ contract('MuzikaPaperContract', ([owner, seller, buyer, anotherAccount]) => {
   });
 
   beforeEach(async () => {
-    token = await MuzikaCoin.new(initialSupply);
+    token = await MuzikaCoin.new(initialSupply, {from: owner});
 
     /* Manually replace address of PreSignedContract in compile stage
      * So, you should not be input to the constructor on contracts
@@ -47,19 +50,20 @@ contract('MuzikaPaperContract', ([owner, seller, buyer, anotherAccount]) => {
       .replace('1111222233334444555566667777888899990000', PreSignedContract.address.slice(2))
       .replace('9999888877776666555544443333222211110000', token.address.slice(2));
 
-    const lib = await LibPaperPayment.new();
+    const lib = await LibPaperPayment.new({from: owner});
     const dispatcherStorage = await DispatcherStorage.deployed();
 
     MuzikaPaperContract.link('LibPaperPaymentInterface', Dispatcher.address);
 
     // Proxy library
-    await dispatcherStorage.replace(lib.address);
+    await dispatcherStorage.replace(lib.address, {from: _});
 
     paper = await MuzikaPaperContract.new(
       seller,
       price,
       ipfsFileHash,
-      originalFileHash
+      originalFileHash,
+      {from: seller}
     );
 
     await token.transfer(buyer, 5000, {from: owner});
@@ -104,6 +108,17 @@ contract('MuzikaPaperContract', ([owner, seller, buyer, anotherAccount]) => {
     balanceOfSeller.should.be.bignumber.not.equal(0);
   });
   */
+  it('should be equal to information', async () => {
+    const savedSeller = await paper.seller();
+    const savedPrice = await paper.price();
+    const savedIPFSHash = await paper.ipfsFileHash({from: seller});
+    const savedOriginalHash = await paper.originalFileHash();
+
+    savedSeller.should.be.equal(seller);
+    savedPrice.should.be.bignumber.equal(price);
+    savedIPFSHash.should.be.equal(ipfsFileHash);
+    savedOriginalHash.should.be.equal(originalFileHash);
+  });
 
   it('works for purchase by increase approval without PreSigned function (version 3 of purchase)', async () => {
     const beforePurchase = await token.balanceOf(buyer);
@@ -116,8 +131,35 @@ contract('MuzikaPaperContract', ([owner, seller, buyer, anotherAccount]) => {
     const isPurchased = await paper.isPurchased(buyer);
     const balanceOfSeller = await token.balanceOf(seller);
 
+    const event = await inLogs(await extractEvent(paper), 'Purchase');
+
     afterPurchase.should.be.bignumber.not.equal(beforePurchase);
     isPurchased.should.be.equal(true);
     balanceOfSeller.should.be.bignumber.not.equal(0);
+    event.args.buyer.should.be.equal(buyer);
+    event.args.price.should.be.bignumber.equal(price);
+  });
+
+  it('should be stop sale when sold out', async () => {
+    await inTransaction(paper.soldOut({from: seller}), 'SoldOut');
+
+    const forSale = await paper.forSale();
+
+    forSale.should.be.equal(false);
+    assertRevert(token.increaseApprovalAndCall(paper.address, price, '0x', {from: buyer}))
+  });
+
+  it('should be able to resale product', async () => {
+    await paper.soldOut({from: seller});
+    await inTransaction(paper.resale({from: seller}), 'Resale');
+
+    const forSale = await paper.forSale();
+    await token.increaseApprovalAndCall(paper.address, price, '0x', {from: buyer});
+
+    const event = await inLogs(await extractEvent(paper), 'Purchase');
+
+    forSale.should.be.equal(true);
+    event.args.buyer.should.be.equal(buyer);
+    event.args.price.should.be.bignumber.equal(price);
   });
 });

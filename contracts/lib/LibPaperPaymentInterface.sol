@@ -41,5 +41,7 @@ library LibPaperPaymentInterface {
 
   function soldOut(Paper storage paper) public;
 
+  function resale(Paper storage paper) public;
+
   function purchase(Paper storage paper, address _buyer) public returns (bool);
 }
