@@ -51,7 +51,7 @@ library LibPaperPayment {
   }
 
   function isPurchased(LibPaperPaymentInterface.Paper storage paper, address user) public view returns (bool) {
-    return msg.sender == paper._seller || paper._purchased[user];
+    return user == paper._seller || paper._purchased[user];
   }
 
   function soldOut(LibPaperPaymentInterface.Paper storage paper) public {
