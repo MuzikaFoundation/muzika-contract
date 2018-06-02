@@ -1,6 +1,6 @@
 const HDWalletProvider = require("truffle-hdwallet-provider-privkey");
-const privateKey = '';
-const token = '';
+const privateKey = process.env.MUZIKA_PRIVATE_KEY;
+const token = process.env.MUZIKA_INFURA_ACCESS_TOKEN;
 
 function networkUrl (providerType) {
   switch (providerType) {

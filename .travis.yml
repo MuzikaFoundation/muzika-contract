@@ -9,7 +9,6 @@ install:
   - npm install -g truffle ganache-cli
   - nohup ganache-cli &
   - npm install
-  - mv config/truffle.provider.example.js config/truffle.provider.js
 script:
   - npm run lint
   - npm run contract:compile
