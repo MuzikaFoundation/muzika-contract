@@ -6,7 +6,8 @@
     "test": "npm run test:contract",
     "lint": "solium -d contracts/",
     "test:contract": "truffle test",
-    "contract:compile": "truffle compile"
+    "contract:compile": "truffle compile",
+    "contract:import": "python network-injector.py import"
   },
   "private": true,
   "dependencies": {
