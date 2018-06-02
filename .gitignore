@@ -4,6 +4,7 @@
 /dist
 /tmp
 /out-tsc
+/config/truffle.provider.js
 
 # dependencies
 /node_modules
