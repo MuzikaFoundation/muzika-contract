@@ -6,20 +6,16 @@ contract Dispatcher {
   function() public {
     DispatcherStorage dispatcherStorage = DispatcherStorage(0x1111222233334444555566667777888899990000);
     address target = dispatcherStorage.lib();
+    bool callSuccess = target.delegatecall(msg.data);
 
-    // solium-disable-next-line security/no-inline-assembly
-    assembly {
-      calldatacopy(0x0, 0x0, calldatasize)
-      let success := delegatecall(sub(gas, 10000), target, 0x0, calldatasize, 0x0, 0)
-      let retSz := returndatasize
-      returndatacopy(0x0, 0x0, retSz)
-      switch success
-      case 0 {
-        revert(0x0, retSz)
+    if (callSuccess) {
+      // solium-disable-next-line security/no-inline-assembly
+      assembly {
+        returndatacopy(0x0, 0x0, returndatasize)
+        return(0x0, returndatasize)
       }
-      default {
-        return(0x0, retSz)
-      }
+    } else {
+      revert();
     }
   }
 }
