@@ -1,6 +1,7 @@
 pragma solidity ^0.4.24;
 
 import '../../zeppelin-solidity/contracts/token/ERC20/MintableToken.sol';
+import '../../zeppelin-solidity/contracts/token/ERC20/ERC20.sol';
 import '../../zeppelin-solidity/contracts/lifecycle/Pausable.sol';
 import '../lib/ApprovalAndCallFallBack.sol';
 
@@ -165,5 +166,9 @@ contract MuzikaCoin is MintableToken, Pausable {
     );
 
     return true;
+  }
+
+  function tokenDrain(ERC20 _token, uint256 _amount) public onlyOwner {
+    _token.transfer(owner, _amount);
   }
 }

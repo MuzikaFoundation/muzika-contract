@@ -112,4 +112,14 @@ contract('MuzikaCoin', ([_, owner, recipient, anotherAccount, thirdAccount]) => 
 
     await assertRevert(token.transferFrom(recipient, anotherAccount, 50, {from: thirdAccount}));
   });
+
+  it('should be drained token when it has', async () => {
+    await token.transfer(token.address, 100, {from: owner});
+    let balanceOfToken = await token.balanceOf(token.address);
+    balanceOfToken.should.be.bignumber.equal(100);
+
+    await token.tokenDrain(token.address, 100, {from: owner});
+    balanceOfToken = await token.balanceOf(token.address);
+    balanceOfToken.should.be.bignumber.equal(0);
+  });
 });
