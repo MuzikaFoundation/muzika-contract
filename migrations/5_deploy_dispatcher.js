@@ -4,19 +4,33 @@ const ethAbi = require('ethereumjs-abi');
 const MuzikaCoin = artifacts.require('MuzikaCoin');
 const MuzikaPaperContract = artifacts.require('MuzikaPaperContract');
 const PreSignedContract = artifacts.require('PreSignedContract');
-const Dispatcher = artifacts.require('Dispatcher');
-const DispatcherStorage = artifacts.require('DispatcherStorage');
+const PaperDispatcher = artifacts.require('PaperDispatcher');
+const ArtistDispatcher = artifacts.require('ArtistDispatcher');
+const PaperDispatcherStorage = artifacts.require('PaperDispatcherStorage');
+const ArtistDispatcherStorage = artifacts.require('ArtistDispatcherStorage');
 
-const backedUpBytecode = Dispatcher.bytecode;
+const backedUpBytecode = PaperDispatcher.bytecode;
+const backedUpArtistDispatcherBytecode = ArtistDispatcher.bytecode;
 module.exports = (deployer) => {
-  deployer.deploy(DispatcherStorage, '0x0000000000000000000000000000000000000000').then(() => {
-    return DispatcherStorage.deployed();
+  deployer.deploy(PaperDispatcherStorage, '0x0000000000000000000000000000000000000000').then(() => {
+    return PaperDispatcherStorage.deployed();
   }).then(dispatcherStorage => {
-    Dispatcher.bytecode = Dispatcher.bytecode
+    PaperDispatcher.bytecode = PaperDispatcher.bytecode
       .replace('1111222233334444555566667777888899990000', dispatcherStorage.address.slice(2));
 
-    return deployer.deploy(Dispatcher);
+    return deployer.deploy(PaperDispatcher);
   }).then(() => {
-    Dispatcher.bytecode = backedUpBytecode;
+    PaperDispatcher.bytecode = backedUpBytecode;
   });
+
+	deployer.deploy(ArtistDispatcherStorage, '0x0000000000000000000000000000000000000000').then(() => {
+		return ArtistDispatcherStorage.deployed();
+	}).then(dispatcherStorage => {
+		ArtistDispatcher.bytecode = ArtistDispatcher.bytecode
+			.replace('1111222233334444555566667777888899990000', dispatcherStorage.address.slice(2));
+
+		return deployer.deploy(ArtistDispatcher);
+	}).then(() => {
+		ArtistDispatcher.bytecode = backedUpArtistDispatcherBytecode;
+	});
 };

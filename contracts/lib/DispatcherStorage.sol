@@ -13,3 +13,11 @@ contract DispatcherStorage is Ownable {
     lib = newLib;
   }
 }
+
+contract PaperDispatcherStorage is DispatcherStorage {
+  constructor(address newLib) public DispatcherStorage(newLib) {}
+}
+
+contract ArtistDispatcherStorage is DispatcherStorage {
+  constructor(address newLib) public DispatcherStorage(newLib) {}
+}

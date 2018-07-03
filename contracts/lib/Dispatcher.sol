@@ -19,3 +19,10 @@ contract Dispatcher {
     }
   }
 }
+
+contract ArtistDispatcher is Dispatcher {
+}
+
+contract PaperDispatcher is Dispatcher {
+
+}
