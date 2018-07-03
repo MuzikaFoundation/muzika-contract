@@ -13,10 +13,8 @@ const MuzikaArtistContract = artifacts.require('MuzikaArtistContract');
 const PreSignedContract = artifacts.require('PreSignedContract');
 const LibPaperPayment = artifacts.require('LibPaperPayment');
 const LibArtistPayment = artifacts.require('LibArtistPayment');
-const PaperDispatcher = artifacts.require('PaperDispatcher');
-const ArtistDispatcher = artifacts.require('ArtistDispatcher');
-const PaperDispatcherStorage = artifacts.require('PaperDispatcherStorage');
-const ArtistDispatcherStorage = artifacts.require('ArtistDispatcherStorage');
+const Dispatcher = artifacts.require('Dispatcher');
+const DispatcherStorage = artifacts.require('DispatcherStorage');
 
 require('chai')
 	.use(require('chai-as-promised'))
@@ -36,19 +34,19 @@ contract('MuzikaArtistContract', ([_, owner, seller, sellerWithDist, buyer1, buy
 	const randomPrice = Math.floor(Math.random() * 400 + 100);
 	const distributors = [distributor1, distributor2, distributor3];
 	const distRatios = [
-		Math.floor(Math.random() * 400) + 100,    // random ratio between [10%, 50%)
-		300,
-		200
+		Math.floor(Math.random() * 4000) + 1000,    // random ratio between [10%, 50%)
+		3000,                                       // 30%
+		2000                                        // 20%
 	];
 	const distCloseTime = [
-		0,
-		Math.floor(new Date().getTime() / 1000) - 3600,   // it closed 1 hours ago, so distributor2 would not get token.
-		Math.floor(new Date().getTime() / 1000) + 3600    // it will be closed after 1 hours, so distributor3 will get token.
+		0,                                                // no close time
+		Math.floor(new Date().getTime() / 1000) - 3600,   // closed 1 hours ago, so distributor2 would not get token.
+		Math.floor(new Date().getTime() / 1000) + 3600    // will be closed after 1 hours, so distributor3 will get token.
 	];
 	const maxDists = [
-		0,
 		0,    // no maximum.
-		10    // distributor3 can get the token maximum 10 MZK.
+		0,    // no maximum.
+		10    // distributor3 can get the token maximum 10.
 	];
 
 	// sign function
@@ -58,7 +56,6 @@ contract('MuzikaArtistContract', ([_, owner, seller, sellerWithDist, buyer1, buy
 	let backedUpLibPaperPaymentBinary = LibPaperPayment.bytecode;
 
 	let backedUpArtistContractBinary = MuzikaArtistContract.bytecode;
-	let backedUpLibArtistPaymentBinary = LibArtistPayment.bytecode;
 
 	afterEach(() => {
 		// Restore bytecode of paper contract
@@ -66,7 +63,6 @@ contract('MuzikaArtistContract', ([_, owner, seller, sellerWithDist, buyer1, buy
 		LibPaperPayment.bytecode = backedUpLibPaperPaymentBinary;
 
 		MuzikaArtistContract.bytecode = backedUpArtistContractBinary;
-		LibArtistPayment.bytecode = backedUpLibArtistPaymentBinary;
 	});
 
 	beforeEach(async () => {
@@ -79,22 +75,17 @@ contract('MuzikaArtistContract', ([_, owner, seller, sellerWithDist, buyer1, buy
 			.replace('1111222233334444555566667777888899990000', PreSignedContract.address.slice(2))
 			.replace('9999888877776666555544443333222211110000', token.address.slice(2));
 
-		LibArtistPayment.bytecode = LibArtistPayment.bytecode
+		MuzikaArtistContract.bytecode = MuzikaArtistContract.bytecode
 			.replace('9999888877776666555544443333222211110000', token.address.slice(2));
 
 		const libPaper = await LibPaperPayment.new({from: owner});
-		const libArtist = await LibArtistPayment.new({from: owner});
-		const paperDispatcherStorage = await PaperDispatcherStorage.deployed();
-		const artistDispatcherStorage = await ArtistDispatcherStorage.deployed();
+		const dispatcherStorage = await DispatcherStorage.deployed();
 
-		MuzikaPaperContract.link('LibPaperPaymentInterface', PaperDispatcher.address);
-		// MuzikaArtistContract.link('LibPaperPaymentInterface', Dispatcher.address);
-		MuzikaArtistContract.link('LibArtistPaymentInterface', ArtistDispatcher.address);
-		MuzikaArtistContract.link('LibPaperPaymentInterface', PaperDispatcher.address);
+		MuzikaPaperContract.link('LibPaperPaymentInterface', Dispatcher.address);
+		MuzikaArtistContract.link('LibPaperPaymentInterface', Dispatcher.address);
 
 		// Proxy library
-		await paperDispatcherStorage.replace(libPaper.address, {from: _});
-		await artistDispatcherStorage.replace(libArtist.address, {from: _});
+		await dispatcherStorage.replace(libPaper.address, {from: _});
 
 		paper = await MuzikaPaperContract.new(
 			seller,
@@ -178,9 +169,15 @@ contract('MuzikaArtistContract', ([_, owner, seller, sellerWithDist, buyer1, buy
 
 		console.log(artistBalance, dist1Balance, dist2Balance, dist3Balance);
 
-		dist1Balance.should.be.bignumber.equal(Math.floor(contractBalance * distRatios[0] / 1000));
+		dist1Balance.should.be.bignumber.equal(Math.floor(contractBalance * distRatios[0] / 10000));
+
+		// distributor 2 would get no MZK since the close time in artist contract is defined.
 		dist2Balance.should.be.bignumber.equal(0);
+
+		// distributor 3 would get only 10 MZK, since the distributor can get maximum 10.
 		dist3Balance.should.be.bignumber.equal(10);
+
+		// all the remain to the artist.
 		artistBalance.should.be.bignumber.equal(contractBalance - dist1Balance - dist2Balance - dist3Balance);
 	});
 });
