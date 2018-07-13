@@ -146,7 +146,7 @@ contract('MuzikaPaperContract', ([_, owner, seller, buyer, anotherAccount]) => {
     const forSale = await paper.forSale();
 
     forSale.should.be.equal(false);
-    assertRevert(token.increaseApprovalAndCall(paper.address, price, '0x', {from: buyer}))
+    await assertRevert(token.increaseApprovalAndCall(paper.address, price, '0x', {from: buyer}))
   });
 
   it('should be able to resale product', async () => {

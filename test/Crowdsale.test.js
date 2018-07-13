@@ -102,7 +102,7 @@ contract('Crowdsale', ([_, owner, wallet, investor1, investor2]) => {
 
     const value = 500;
 
-    assertRevert(crowdsale.sendTransaction({from: investor1, value: value}));
+    await assertRevert(crowdsale.sendTransaction({from: investor1, value: value}));
 
     // garbage transactions to begin sale
     await genJunkTxs(10);
@@ -121,7 +121,7 @@ contract('Crowdsale', ([_, owner, wallet, investor1, investor2]) => {
     // garbage transactions to stop
     await genJunkTxs(10);
 
-    assertRevert(crowdsale.sendTransaction({from: investor2, value: value}));
+    await assertRevert(crowdsale.sendTransaction({from: investor2, value: value}));
   });
 
   it('should refund when transferred value exceed maximum cap', async () => {
@@ -150,14 +150,14 @@ contract('Crowdsale', ([_, owner, wallet, investor1, investor2]) => {
     const beforeWei = await promisify(web3.eth.getBalance, investor1);
 
     // If someone transfers wei more than maxCap, revert
-    assertRevert(crowdsale.sendTransaction({from: investor1, value: exceededValue, gasPrice: 0}));
+    await assertRevert(crowdsale.sendTransaction({from: investor1, value: exceededValue, gasPrice: 0}));
 
     // If someone transfers wei less than minCapPerPerson, revert
-    assertRevert(crowdsale.sendTransaction({from: investor1, value: tooSmallValue, gasPrice: 0}));
+    await assertRevert(crowdsale.sendTransaction({from: investor1, value: tooSmallValue, gasPrice: 0}));
 
     // If the each value of wei is less than maxCapPerPerson, but total value is exceeded
     await crowdsale.sendTransaction({from: investor1, value: oneMoreTransfer, gasPrice: 0});
-    assertRevert(crowdsale.sendTransaction({from: investor1, value: oneMoreTransfer, gasPrice: 0}));
+    await assertRevert(crowdsale.sendTransaction({from: investor1, value: oneMoreTransfer, gasPrice: 0}));
 
     // This value don't exceed maxCapPerPerson
     const allowedValue = maxCapPerPerson - oneMoreTransfer;
@@ -177,7 +177,7 @@ contract('Crowdsale', ([_, owner, wallet, investor1, investor2]) => {
 
     await crowdsale.sendTransaction({from: investor1, value: value});
 
-    assertRevert(crowdsale.claim({from: investor1}));
+    await assertRevert(crowdsale.claim({from: investor1}));
 
     await genJunkTxs(20);
 
