@@ -1,10 +1,10 @@
 {
   "networks": {
     "1": {
-      "transactionHash": "0xb5024cee35ec539fe6664d0f4e50a171d5b5cdccb02060b6c81fc2be120d4a99",
+      "transactionHash": "0x54b618741658428f785b11d084c0eb6faf30cb5c87f4f05225250a5181eab3cb",
       "events": {},
       "links": {},
-      "address": "0x902aafE1e3BC4B8443D3e5C42D66378635FD7a60"
+      "address": "0x5284d8993e8549a577834667ffe2f8f2ccdb90f8"
     },
     "3": {
       "transactionHash": "0x20e60c19f574610279ef34032f8a3d34e578c63a5041372b4968d25aa65e79d8",
