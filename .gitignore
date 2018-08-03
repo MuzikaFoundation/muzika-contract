@@ -41,3 +41,8 @@ Thumbs.db
 
 # Truffle build directory
 build/contracts/
+
+# Coverage directory used by tools like istanbul
+coverage
+coverage.json
+coverageEnv
