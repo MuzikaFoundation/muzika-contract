@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import '../../zeppelin-solidity/contracts/math/SafeMath.sol';
+import 'openzeppelin-solidity/contracts/math/SafeMath.sol';
 import '../token/MuzikaCoin.sol';
 import './PreSignedContract.sol';
 import './LibPaperPaymentInterface.sol';

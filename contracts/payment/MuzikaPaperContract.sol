@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import '../../zeppelin-solidity/contracts/ownership/Ownable.sol';
+import 'openzeppelin-solidity/contracts/ownership/Ownable.sol';
 import '../lib/LibPaperPaymentInterface.sol';
 import '../lib/ApprovalAndCallFallBack.sol';
 

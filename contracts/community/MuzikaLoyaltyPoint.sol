@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
-import '../../zeppelin-solidity/contracts/ownership/Ownable.sol';
-import '../../zeppelin-solidity/contracts/math/SafeMath.sol';
+import 'openzeppelin-solidity/contracts/ownership/Ownable.sol';
+import 'openzeppelin-solidity/contracts/math/SafeMath.sol';
 import '../token/MuzikaCoin.sol';
 
 contract MuzikaLoyaltyPoint is Ownable {

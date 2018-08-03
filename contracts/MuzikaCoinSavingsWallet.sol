@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import '../zeppelin-solidity/contracts/ownership/Heritable.sol';
+import 'openzeppelin-solidity/contracts/ownership/Heritable.sol';
 
 /**
  * @dev Work In Progress (do not deploy this contract to production)

@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import '../../zeppelin-solidity/contracts/ownership/Ownable.sol';
+import 'openzeppelin-solidity/contracts/ownership/Ownable.sol';
 
 contract PreSignedContract is Ownable {
   mapping (uint8 => bytes) internal _prefixPreSignedFirst;
