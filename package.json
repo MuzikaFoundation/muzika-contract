@@ -8,7 +8,7 @@
     "test:contract": "truffle test",
     "contract:compile": "truffle compile",
     "contract:import": "python network-injector.py import",
-    "coverage": "export COVERAGE_MODE=true && solidity-coverage"
+    "coverage": "export MUZIKA_COVERAGE_MODE=true && solidity-coverage"
   },
   "private": true,
   "dependencies": {
