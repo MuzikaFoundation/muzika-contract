@@ -3,7 +3,7 @@ require('babel-polyfill');
 
 const newProvider = require('./config/truffle.provider.js');
 
-module.exports = {
+const config = {
   // See <http://truffleframework.com/docs/advanced/configuration>
   // to customize your Truffle configuration!
   networks: {
@@ -44,8 +44,13 @@ module.exports = {
       // Lower values will optimize more for initial deployment cost, higher values will optimize more for high-frequency usage.
       runs: 200
     }
-  },
-  mocha: {
-    reporter: 'eth-gas-reporter'
   }
 };
+
+if (!process.env.MUZIKA_COVERAGE_MODE) {
+  config.mocha = {
+    reporter: 'eth-gas-reporter'
+  };
+}
+
+module.exports = config;
