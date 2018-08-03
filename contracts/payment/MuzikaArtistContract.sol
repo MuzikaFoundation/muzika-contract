@@ -27,6 +27,7 @@ contract MuzikaArtistContract is Ownable {
   }
 
   Artist internal _artist;
+  bool _distEnded;
 
 //  event Purchase(address indexed buyer, uint price);
 //  event SoldOut(uint at);
@@ -67,6 +68,9 @@ contract MuzikaArtistContract is Ownable {
     // the sum of distribution fees cannot over 100.00%
     require(distFeeSum <= 10000);
 
+    // if no distributor, set distribution ended to true
+    _distEnded = (distFeeSum == 0);
+
     _artist._token = MuzikaCoin(0x9999888877776666555544443333222211110000);
   }
 
@@ -76,31 +80,56 @@ contract MuzikaArtistContract is Ownable {
 
   function distribute() public returns (bool) {
     require(msg.sender == _artist._artist);
+    require(!_distEnded);
 
     // get current balance
     uint256 balance = _artist._token.balanceOf(address(this));
     uint256 remain = balance;
+    bool distEnded = true;
+
+    // balance should be over 0 MZK for distribution.
+    require(balance > 0);
 
     for (uint i = 0; i < _artist._distributors.length; i++) {
       address distAddress = _artist._distributors[i];
       Distribution memory dist = _artist._dists[distAddress];
 
+      // if already finished with this distributor
+      if (!dist._isUsed) continue;
+
       uint256 distAmount = balance.mul(dist._fee).div(10000);
 
-      // check if being over max profit
+      // if max profit for this distributor exists
       if (dist._maxProfit != 0) {
+
+        // if over the max profit
         if (dist._maxProfit < dist._profit.add(distAmount)) {
           distAmount = dist._maxProfit.sub(dist._profit);
+          _artist._dists[distAddress]._isUsed = false;
         }
 
         _artist._dists[distAddress]._profit = dist._profit.add(distAmount);
       }
 
-      // if max proper or time over, don't distribute him/her.
-      if (distAmount == 0 || (dist._closeTime != 0 && dist._closeTime < now)) continue;
+      // if close time over, don't distribute him/her
+      if (dist._closeTime != 0 && dist._closeTime < now) {
+        _artist._dists[distAddress]._isUsed = false;
+        continue;
+      }
 
-      // send token
-      require(remain >= distAmount);
+      // one of the distributions not ended, set ended to "false"
+      // this variable is for checking all distribution ended, and if done,
+      // transfer all ownership of papers to artist since all distribution ended.
+
+      distEnded = false;
+
+      // if no need to distribute, go to next distribution.
+      // Even though the distribution amount could be 0, but it can be not-ended distribution
+      // because of number flooring of distributed amount.
+
+      if (distAmount == 0) continue;
+
+      // send token to the distributor
       remain = remain.sub(distAmount);
       _artist._token.transfer(distAddress, distAmount);
     }
@@ -108,6 +137,13 @@ contract MuzikaArtistContract is Ownable {
     // send remain to the artist
     if (remain > 0) {
       _artist._token.transfer(_artist._artist, remain);
+    }
+
+    // if ended to distribute so don't need to distribute,
+    // transfer all paper's ownership to the artist.
+    if (distEnded) {
+      _distEnded = true;
+      _transferAllPaper();
     }
 
     return true;
@@ -118,10 +154,23 @@ contract MuzikaArtistContract is Ownable {
     string _ipfsFileHash,
     string _originalFileHash
   ) public {
-    _artist._papers.push(new MuzikaPaperContract(address(this), _price, _ipfsFileHash, _originalFileHash));
+    _artist._papers.push(
+      new MuzikaPaperContract(
+        (_distEnded) ? _artist._artist : address(this),
+        _price,
+        _ipfsFileHash,
+        _originalFileHash
+      )
+    );
   }
 
   function papers() public view returns (address[]) {
     return _artist._papers;
+  }
+
+  function _transferAllPaper() internal {
+    for (uint i = 0; i < _artist._papers.length; i++) {
+      MuzikaPaperContract(_artist._papers[i]).transferSeller(_artist._artist);
+    }
   }
 }

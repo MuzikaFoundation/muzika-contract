@@ -70,4 +70,8 @@ contract MuzikaPaperContract is Ownable, ApprovalAndCallFallBack {
   {
     return _paper.purchase(_owner);
   }
+
+  function transferSeller(address _newSeller) public returns (bool) {
+    return _paper.transferSeller(_newSeller);
+  }
 }

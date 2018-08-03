@@ -86,4 +86,10 @@ library LibPaperPayment {
 
     return true;
   }
+
+  function transferSeller(LibPaperPaymentInterface.Paper storage paper, address _seller) public returns (bool) {
+    require(msg.sender == paper._seller);
+    paper._seller = _seller;
+    return true;
+  }
 }

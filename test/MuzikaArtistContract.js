@@ -124,11 +124,9 @@ contract('MuzikaArtistContract', ([_, owner, seller, sellerWithDist, buyer1, buy
 	});
 
 	it('works for creating 5 new papers', async () => {
-		await artist.createPaper(price, ipfsFileHash, originalFileHash);
-		await artist.createPaper(price, ipfsFileHash, originalFileHash);
-		await artist.createPaper(price, ipfsFileHash, originalFileHash);
-		await artist.createPaper(price, ipfsFileHash, originalFileHash);
-		await artist.createPaper(price, ipfsFileHash, originalFileHash);
+		for (let i = 0; i < 5; ++i) {
+			await artist.createPaper(price, ipfsFileHash, originalFileHash);
+		}
 		const papers = await artist.papers();
 		console.log(papers);
 
