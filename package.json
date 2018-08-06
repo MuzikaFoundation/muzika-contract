@@ -8,7 +8,7 @@
     "test:contract": "truffle test",
     "contract:compile": "truffle compile",
     "contract:import": "python network-injector.py import",
-    "coverage": "export MUZIKA_COVERAGE_MODE=true && solidity-coverage"
+    "coverage": "cross-env MUZIKA_COVERAGE_MODE=true solidity-coverage"
   },
   "private": true,
   "dependencies": {
@@ -30,6 +30,7 @@
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
     "chai-bignumber": "^2.0.2",
+    "cross-env": "^5.2.0",
     "eth-gas-reporter": "^0.1.5",
     "solidity-coverage": "^0.5.5",
     "solium": "git+https://github.com/duaraghav8/Solium.git#develop",
