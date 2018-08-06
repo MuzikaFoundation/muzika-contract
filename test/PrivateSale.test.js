@@ -53,6 +53,40 @@ contract('PrivateSale', ([_, owner, investor1, investor2, anotherAccount]) => {
     token = await MuzikaCoin.new(initialSupply, {from: owner});
   });
 
+  describe('construct', () => {
+    it('should revert if it has invalid initialReleaseRatio', async () => {
+      const initialReleaseRatio = 120;
+
+      await assertRevert(
+        PrivateSale.new(
+          token.address,
+          rate,
+          initialReleaseRatio,
+          releaseRatioPerStep,
+          totalStep,
+          daysInterval,
+          {from: owner}
+        )
+      );
+    });
+
+    it('should revert if it has invalid releaseRatioPerStep', async () => {
+      const releaseRatioPerStep = 120;
+
+      await assertRevert(
+        PrivateSale.new(
+          token.address,
+          rate,
+          initialReleaseRatio,
+          releaseRatioPerStep,
+          totalStep,
+          daysInterval,
+          {from: owner}
+        )
+      );
+    });
+  });
+
   describe('fundamental functions testing', () => {
     const deploy = async (releasedTime, initiallySetInvestor) => {
       privateSale = await PrivateSale.new(
@@ -76,6 +110,12 @@ contract('PrivateSale', ([_, owner, investor1, investor2, anotherAccount]) => {
       releasedTime = now();
       totalStep = 9;
       daysInterval = 10;
+    });
+
+    it('should revert when call setInvestor with zero value', async () => {
+      await deploy(releasedTime);
+
+      await assertRevert(privateSale.setInvestor(investor1, 0, {from: owner}));
     });
 
     it('should save correct information', async () => {
@@ -175,6 +215,13 @@ contract('PrivateSale', ([_, owner, investor1, investor2, anotherAccount]) => {
       actualBalance = await privateSale.balances(investor1);
 
       actualBalance.should.be.bignumber.equals(expectedBalance);
+    });
+
+    it('should revert if a user who is not investor has claimed', async () => {
+      await deploy(releasedTime);
+
+      await assertRevert(privateSale.claim({from: investor1}));
+      await assertRevert(privateSale.distributeToMany([investor1], {from: owner}));
     });
   });
 

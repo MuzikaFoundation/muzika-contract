@@ -5,6 +5,8 @@ const BigNumber = web3.BigNumber;
 const MuzikaCoin = artifacts.require('MuzikaCoin');
 const PublicSale = artifacts.require('PublicSaleMock');
 
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+
 require('chai')
   .use(require('chai-as-promised'))
   .use(require('chai-bignumber')(BigNumber))
@@ -99,6 +101,81 @@ contract('PublicSale', ([_, owner, wallet, investor1, investor2]) => {
     token = await MuzikaCoin.new(initialSupply, {from: owner});
   });
 
+  describe('construct', () => {
+    it('should revert if saleStartTime is bigger than saleEndTime', async () => {
+      const saleStartTime = now() + 5;
+      const saleEndTime = now();
+
+      await assertRevert(
+        PublicSale.new(
+          token.address,
+          wallet,
+          rate,
+          minCapPerPerson,
+          maxCapPerPerson,
+          maxCap,
+          saleStartTime,
+          saleEndTime,
+          initialReleaseRatio,
+          releaseRatioPerStep,
+          totalStep,
+          daysInterval,
+          {from: owner}
+        )
+      );
+    });
+
+    it('should revert if it has invalid initialReleaseRatio', async () => {
+      const initialReleaseRatio = 120;
+
+      saleStartTime = now();
+      saleEndTime = saleStartTime + 5;
+
+      await assertRevert(
+        PublicSale.new(
+          token.address,
+          wallet,
+          rate,
+          minCapPerPerson,
+          maxCapPerPerson,
+          maxCap,
+          saleStartTime,
+          saleEndTime,
+          initialReleaseRatio,
+          releaseRatioPerStep,
+          totalStep,
+          daysInterval,
+          {from: owner}
+        )
+      );
+    });
+
+    it('should revert if it has invalid releaseRatioPerStep', async () => {
+      const releaseRatioPerStep = 120;
+
+      saleStartTime = now();
+      saleEndTime = saleStartTime + 5;
+
+      await assertRevert(
+        PublicSale.new(
+          token.address,
+          wallet,
+          rate,
+          minCapPerPerson,
+          maxCapPerPerson,
+          maxCap,
+          saleStartTime,
+          saleEndTime,
+          initialReleaseRatio,
+          releaseRatioPerStep,
+          totalStep,
+          daysInterval,
+          {from: owner}
+        )
+      );
+    });
+  });
+
   describe('basic testing', () => {
     const deploy = async (startTime, endTime) => {
       saleStartTime = startTime;
@@ -125,6 +202,12 @@ contract('PublicSale', ([_, owner, wallet, investor1, investor2]) => {
     beforeEach(async () => {
       totalStep = 8;
       daysInterval = 5;
+    });
+
+    it('should revert if beneficiary is zero-address', async () => {
+      await deploy(now());
+
+      await assertRevert(publicSale.buyToken(ZERO_ADDRESS, {from: owner, value: 500}));
     });
 
     it('should be sold in sale period', async () => {
@@ -233,6 +316,14 @@ contract('PublicSale', ([_, owner, wallet, investor1, investor2]) => {
       actualBalance = await publicSale.balances(investor1);
 
       actualBalance.should.be.bignumber.equals(expectedBalance);
+    });
+
+    it('should revert if a user who is not investor has claimed', async () => {
+      await deploy(now());
+
+      /* After sale Finished */
+      await wait(5000);
+      await assertRevert(publicSale.claim({from: investor1}));
     });
   });
 
