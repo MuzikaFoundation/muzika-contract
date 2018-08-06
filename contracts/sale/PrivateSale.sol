@@ -19,7 +19,7 @@ contract PrivateSale is Ownable {
   uint256 public releasedTime;              // the time when time-lockup is released and token can be distributed per step
   uint256 public initialReleaseRatio;       // just after released, how amount of token will be distributed
   uint256 public releaseRatioPerStep;       // how many token will be released per step
-  uint256 public totalSteps;
+  uint256 public totalStep;
   uint256 public daysInterval;
 
   event Raise(address indexed investor, uint256 amount);
@@ -48,7 +48,7 @@ contract PrivateSale is Ownable {
     uint256 _rate,
     uint256 _initialReleaseRatio,
     uint256 _releaseRatioPerStep,
-    uint256 _totalSteps,
+    uint256 _totalStep,
     uint256 _daysInterval
   ) public {
     require(_initialReleaseRatio <= 100);
@@ -58,7 +58,7 @@ contract PrivateSale is Ownable {
     rate = _rate;
     initialReleaseRatio = _initialReleaseRatio;
     releaseRatioPerStep = _releaseRatioPerStep;
-    totalSteps = _totalSteps;
+    totalStep = _totalStep;
     daysInterval = _daysInterval;
   }
 
@@ -72,7 +72,7 @@ contract PrivateSale is Ownable {
   }
 
   function calcReleasableAmountInWei(uint256 _step, address _beneficiary) public view returns (uint256) {
-    if (_step == totalSteps) {
+    if (_step == totalStep) {
       return balances[_beneficiary];
     }
 

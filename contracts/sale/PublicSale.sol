@@ -24,7 +24,7 @@ contract PublicSale is Ownable {
 
   uint256 public initialReleaseRatio;       // just after released, how amount of token will be distributed
   uint256 public releaseRatioPerStep;       // how many token will be released per step
-  uint256 public totalSteps;
+  uint256 public totalStep;
   uint256 public daysInterval;
 
   event TokenPurchase(
@@ -74,7 +74,7 @@ contract PublicSale is Ownable {
     uint256 _saleEndTime,
     uint256 _initialReleaseRatio,
     uint256 _releaseRatioPerStep,
-    uint256 _totalSteps,
+    uint256 _totalStep,
     uint256 _daysInterval
   ) public {
     require(_saleStartTime < _saleEndTime);
@@ -91,7 +91,7 @@ contract PublicSale is Ownable {
     saleEndTime = _saleEndTime;
     initialReleaseRatio = _initialReleaseRatio;
     releaseRatioPerStep = _releaseRatioPerStep;
-    totalSteps = _totalSteps;
+    totalStep = _totalStep;
     daysInterval = _daysInterval;
   }
 
@@ -127,7 +127,7 @@ contract PublicSale is Ownable {
   }
 
   function calcReleasableAmountInWei(uint256 _step, address _beneficiary) public view returns (uint256) {
-    if (_step == totalSteps) {
+    if (_step == totalStep) {
       return balances[_beneficiary];
     }
 

@@ -18,7 +18,7 @@ contract('PrivateSale', ([_, owner, investor1, investor2, anotherAccount]) => {
   let initialReleaseRatio = 20;
   let releaseRatioPerStep = 10;
   let releasedTime;
-  let totalSteps;
+  let totalStep;
   let daysInterval; // this unit is seconds
 
   /**
@@ -60,7 +60,7 @@ contract('PrivateSale', ([_, owner, investor1, investor2, anotherAccount]) => {
         rate,
         initialReleaseRatio,
         releaseRatioPerStep,
-        totalSteps,
+        totalStep,
         daysInterval,
         {from: owner}
       );
@@ -74,7 +74,7 @@ contract('PrivateSale', ([_, owner, investor1, investor2, anotherAccount]) => {
 
     beforeEach(async () => {
       releasedTime = now();
-      totalSteps = 9;
+      totalStep = 9;
       daysInterval = 10;
     });
 
@@ -185,7 +185,7 @@ contract('PrivateSale', ([_, owner, investor1, investor2, anotherAccount]) => {
 
     beforeEach(async () => {
       releasedTime = now();
-      totalSteps = 2;
+      totalStep = 2;
       initialReleaseRatio = 40;
       releaseRatioPerStep = 30;
       daysInterval = 5; // 5 seconds
@@ -195,7 +195,7 @@ contract('PrivateSale', ([_, owner, investor1, investor2, anotherAccount]) => {
         rate,
         initialReleaseRatio,
         releaseRatioPerStep,
-        totalSteps,
+        totalStep,
         daysInterval,
         {from: owner}
       );

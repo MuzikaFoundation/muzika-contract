@@ -23,7 +23,7 @@ contract('PublicSale', ([_, owner, wallet, investor1, investor2]) => {
   let saleEndTime;
   let initialReleaseRatio = 20;
   let releaseRatioPerStep = 10;
-  let totalSteps;
+  let totalStep;
   let daysInterval; // this unit is seconds
 
   /**
@@ -115,7 +115,7 @@ contract('PublicSale', ([_, owner, wallet, investor1, investor2]) => {
         saleEndTime,
         initialReleaseRatio,
         releaseRatioPerStep,
-        totalSteps,
+        totalStep,
         daysInterval,
         {from: owner}
       );
@@ -123,7 +123,7 @@ contract('PublicSale', ([_, owner, wallet, investor1, investor2]) => {
     };
 
     beforeEach(async () => {
-      totalSteps = 8;
+      totalStep = 8;
       daysInterval = 5;
     });
 
@@ -240,7 +240,7 @@ contract('PublicSale', ([_, owner, wallet, investor1, investor2]) => {
     beforeEach(async () => {
       saleStartTime = now();
       saleEndTime = saleStartTime + 10;
-      totalSteps = 8;
+      totalStep = 8;
       daysInterval = 5;
 
       publicSale = await PublicSale.new(
@@ -254,7 +254,7 @@ contract('PublicSale', ([_, owner, wallet, investor1, investor2]) => {
         saleEndTime,
         initialReleaseRatio,
         releaseRatioPerStep,
-        totalSteps,
+        totalStep,
         daysInterval,
         {from: owner}
       );
@@ -318,7 +318,7 @@ contract('PublicSale', ([_, owner, wallet, investor1, investor2]) => {
     beforeEach(async () => {
       saleStartTime = now();
       saleEndTime = saleStartTime + 5;
-      totalSteps = 2;
+      totalStep = 2;
       initialReleaseRatio = 40;
       releaseRatioPerStep = 30;
       daysInterval = 5; // 5 seconds
@@ -334,7 +334,7 @@ contract('PublicSale', ([_, owner, wallet, investor1, investor2]) => {
         saleEndTime,
         initialReleaseRatio,
         releaseRatioPerStep,
-        totalSteps,
+        totalStep,
         daysInterval,
         {from: owner}
       );
@@ -405,7 +405,7 @@ contract('PublicSale', ([_, owner, wallet, investor1, investor2]) => {
     beforeEach(async () => {
       saleStartTime = now();
       saleEndTime = saleStartTime + 10;
-      totalSteps = 0;
+      totalStep = 0;
       initialReleaseRatio = 100;
       daysInterval = 5; // 5 seconds
 
@@ -420,7 +420,7 @@ contract('PublicSale', ([_, owner, wallet, investor1, investor2]) => {
         saleEndTime,
         initialReleaseRatio,
         releaseRatioPerStep,
-        totalSteps,
+        totalStep,
         daysInterval,
         {from: owner}
       );
