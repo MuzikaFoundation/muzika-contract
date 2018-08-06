@@ -139,7 +139,7 @@ contract PublicSale is Ownable {
 
   function calcRaisedAmount(address _beneficiary, uint256 _weiAmount) public view returns (uint256) {
     require(minCapPerPerson <= _weiAmount);
-    require(maxCapPerPerson >= balances[_beneficiary].add(_weiAmount));
+    require(maxCapPerPerson >= raisedBy[_beneficiary].add(_weiAmount));
     if (weiRaised.add(_weiAmount) <= maxCap) {
       return _weiAmount;
     } else {
