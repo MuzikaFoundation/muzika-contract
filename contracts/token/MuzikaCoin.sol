@@ -4,6 +4,7 @@ import 'openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol';
 import 'openzeppelin-solidity/contracts/token/ERC20/ERC20.sol';
 import 'openzeppelin-solidity/contracts/lifecycle/Pausable.sol';
 import '../lib/ApprovalAndCallFallBack.sol';
+import '../lib/TransferAndCallFallBack.sol';
 
 contract MuzikaCoin is MintableToken, Pausable {
   string public name = 'Muzika';
@@ -53,7 +54,24 @@ contract MuzikaCoin is MintableToken, Pausable {
     require(
       ApprovalAndCallFallBack(_spender).receiveApproval(
         msg.sender,
-        allowed[msg.sender][_spender],
+        _addedValue,
+        address(this),
+        _data
+      )
+    );
+
+    return true;
+  }
+
+  function transferAndCall(address _to, uint _value, bytes _data) public returns (bool) {
+    require(_to != address(this));
+
+    transfer(_to, _value);
+
+    require(
+      TransferAndCallFallBack(_to).receiveToken(
+        msg.sender,
+        _value,
         address(this),
         _data
       )
