@@ -86,4 +86,23 @@ library LibPaperPayment {
 
     return true;
   }
+
+  function purchase2(LibPaperPaymentInterface.Paper storage paper, address _buyer) public returns (bool) {
+    require(paper._forSale);
+    require(msg.sender == address(paper._token));
+    require(!paper._purchased[_buyer]);
+
+    paper._purchased[_buyer] = true;
+
+    if (paper._price > 0) {
+      uint256 _fee = paper._price.div(100).mul(5); // 5% fee
+
+      paper._token.transfer(paper._seller, paper._price.sub(_fee));
+      paper._token.transfer(msg.sender, _fee); // payback to sender
+    }
+
+    emit Purchase(_buyer, paper._price);
+
+    return true;
+  }
 }

@@ -162,4 +162,47 @@ contract('MuzikaPaperContract', ([_, owner, seller, buyer, anotherAccount]) => {
     event.args.buyer.should.be.equal(buyer);
     event.args.price.should.be.bignumber.equal(price);
   });
+
+  describe('test with transferAndCall', () => {
+    it('works for purchase by transferring token without PreSigned function (version 3 of purchase)', async () => {
+      const beforePurchase = await token.balanceOf(buyer);
+
+      await token.transferAndCall(paper.address, price, '0x', {from: buyer});
+
+      const afterPurchase = await token.balanceOf(buyer);
+      const isPurchased = await paper.isPurchased(buyer);
+      const balanceOfSeller = await token.balanceOf(seller);
+
+      const event = await inLogs(await extractEvent(paper), 'Purchase');
+
+      afterPurchase.should.be.bignumber.not.equal(beforePurchase);
+      isPurchased.should.be.equal(true);
+      balanceOfSeller.should.be.bignumber.not.equal(0);
+      event.args.buyer.should.be.equal(buyer);
+      event.args.price.should.be.bignumber.equal(price);
+    });
+
+    it('should be stop sale when sold out', async () => {
+      await inTransaction(paper.soldOut({from: seller}), 'SoldOut');
+
+      const forSale = await paper.forSale();
+
+      forSale.should.be.equal(false);
+      await assertRevert(token.transferAndCall(paper.address, price, '0x', {from: buyer}))
+    });
+
+    it('should be able to resale product', async () => {
+      await paper.soldOut({from: seller});
+      await inTransaction(paper.resale({from: seller}), 'Resale');
+
+      const forSale = await paper.forSale();
+      await token.transferAndCall(paper.address, price, '0x', {from: buyer});
+
+      const event = await inLogs(await extractEvent(paper), 'Purchase');
+
+      forSale.should.be.equal(true);
+      event.args.buyer.should.be.equal(buyer);
+      event.args.price.should.be.bignumber.equal(price);
+    });
+  });
 });

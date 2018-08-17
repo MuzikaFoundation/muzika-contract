@@ -70,4 +70,15 @@ contract MuzikaPaperContract is Ownable, ApprovalAndCallFallBack {
   {
     return _paper.purchase(_owner);
   }
+
+  function receiveToken(
+    address _owner,
+    uint256 /* _amount */,
+    address /* _token */,
+    bytes /* _data */
+  )
+  public returns (bool)
+  {
+    return _paper.purchase2(_owner);
+  }
 }
