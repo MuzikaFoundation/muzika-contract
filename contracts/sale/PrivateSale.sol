@@ -67,6 +67,7 @@ contract PrivateSale is Ownable {
   }
 
   function releaseTimeLockup(uint256 _releasedTime) external onlyOwner {
+    require(releasedTime == 0);
     releasedTime = _releasedTime;
     emit Release(_releasedTime);
   }
@@ -110,20 +111,22 @@ contract PrivateSale is Ownable {
     uint256 amount = calcTokenAmount(weiAmount);
 
     balances[_beneficiary] = balances[_beneficiary].sub(weiAmount);
-    currentSteps[_beneficiary]++;
+    currentSteps[_beneficiary] = currentSteps[_beneficiary].add(1);
 
-    token.transfer(_beneficiary, amount);
+    require(token.transfer(_beneficiary, amount));
 
     emit Claim(msg.sender, _beneficiary, currentStep, amount);
   }
 
   function distribute() external onlyOwner {
+    require(investors.length < (2**32));
     for(uint32 i = 0; i < investors.length; i++) {
       claimFor(investors[i]);
     }
   }
 
   function distributeToMany(address[] _investors) external onlyOwner {
+    require(_investors.length < (2**32));
     for(uint32 i = 0; i < _investors.length; i++) {
       claimFor(_investors[i]);
     }

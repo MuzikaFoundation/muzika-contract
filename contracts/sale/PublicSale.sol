@@ -159,14 +159,15 @@ contract PublicSale is Ownable {
     uint256 amount = calcTokenAmount(weiAmount);
 
     balances[_beneficiary] = balances[_beneficiary].sub(weiAmount);
-    currentSteps[_beneficiary]++;
+    currentSteps[_beneficiary] = currentSteps[_beneficiary].add(1);
 
-    token.transfer(_beneficiary, amount);
+    require(token.transfer(_beneficiary, amount));
 
     emit Claim(msg.sender, _beneficiary, currentStep, amount);
   }
 
   function distribute(address[] _investors) external onlyOwner {
+    require(_investors.length < (2**32));
     for(uint32 i = 0; i < _investors.length; i++) {
       claimFor(_investors[i]);
     }
@@ -178,7 +179,7 @@ contract PublicSale is Ownable {
     uint256 tokenAmount = calcTokenAmount(maxCap.sub(weiRaised));
 
     wallet.transfer(weiAmount);
-    token.transfer(wallet, tokenAmount);
+    require(token.transfer(wallet, tokenAmount));
 
     emit Finalize(wallet, weiAmount, tokenAmount);
 
