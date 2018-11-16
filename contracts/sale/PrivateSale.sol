@@ -51,6 +51,8 @@ contract PrivateSale is Ownable {
     uint256 _totalStep,
     uint256 _daysInterval
   ) public {
+    require(address(_token) != address(0));
+    require(_daysInterval != 0);
     require(_initialReleaseRatio <= 100);
     require(_releaseRatioPerStep <= 100);
 
